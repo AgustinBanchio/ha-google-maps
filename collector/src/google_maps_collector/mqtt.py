@@ -26,7 +26,7 @@ class Publisher:
         self.batteries = {}
         self.availability = {}
         self.discovered = set()
-        self.names = {}
+        self.discovery_profiles = {}
         self.details = {}
         self.session = None
 
@@ -49,10 +49,12 @@ class Publisher:
             common = {"availability": availability, "availability_mode": "all",
                 "enabled_by_default": True, "device": {"identifiers": [f"{PREFIX}_{key}"],
                 "name": device_name}}
-            if key not in self.discovered or self.names.get(key) != device_name or force:
+            profile = (device_name, person.picture_url)
+            if key not in self.discovered or self.discovery_profiles.get(key) != profile or force:
                 self.send(f"homeassistant/device_tracker/{PREFIX}/{key}/config", {
                     **common, "name": "Maps location", "unique_id": f"{PREFIX}_{key}",
                     "source_type": "gps", "visible_by_default": True,
+                    **({"entity_picture": person.picture_url} if person.picture_url else {}),
                     "json_attributes_topic": f"{base}/location"})
                 self.send(f"homeassistant/sensor/{PREFIX}/{key}-battery/config", {
                     **common, "name": "Maps battery", "unique_id": f"{PREFIX}_{key}_battery",
@@ -63,7 +65,7 @@ class Publisher:
                     "state_topic": f"{base}/details", "value_template": "{{ value_json.last_seen }}",
                     "device_class": "timestamp", "json_attributes_topic": f"{base}/details"})
                 self.discovered.add(key)
-                self.names[key] = device_name
+                self.discovery_profiles[key] = profile
             if self.availability.get(key) != available or force:
                 # Publish unavailability before replaying any location on resync.
                 if available == "offline":

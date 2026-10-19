@@ -81,3 +81,6 @@ The current release was built on ARM64 and can be pinned by its exact local Dock
 After persistent deployment is explicitly approved, tools/provision_collector.py can provision once and encrypt the generated owner passwords to an ephemeral workstation public key. The Pi keeps only the admin verifier; the workstation receives an owner-only ignored .local/owner-handoff/SETUP-PRIVATE.txt. Copy these owner credentials into your password manager, then delete the handoff. No plaintext password goes into SSH arguments/InputText, chat, Git or tool output.
 
 From a normal desktop PowerShell session, tools/Open-CollectorTunnel.ps1 opens the verified SSH loopback tunnel using the existing private connection metadata and normal 1Password approval. Keep the terminal open while visiting http://127.0.0.1:8787.
+
+
+Google profile photos belong to Maps location tracker entities and map markers, as in the original integration. HA's device registry does not have a per-device profile photo. The collector sets the tracker's entity_picture in MQTT discovery, because HA ignores that reserved field in JSON extra attributes. Refresh the tracker dialog/map after a collector update; an Account holder record has no Google-supplied picture. Attaching a tracker to an HA Person does not automatically set that Person's profile photo.

@@ -134,3 +134,35 @@ def test_connectivity_sensor_reports_poll_failures_separately_from_trackers():
     publisher.sync(snapshot(status="network_failure"))
     assert ("google_maps_collector/session", "OFF") in calls
     assert not any(t.endswith("/availability") and p == "offline" for t,p in calls)
+
+
+def test_tracker_picture_is_discovery_configuration_and_refreshes_on_change_or_removal():
+    # HA filters entity_picture out of JSON attributes. Its MqttEntity reads the
+    # supported discovery field instead, including on discovery_update.
+    calls = []
+    publisher = Publisher(lambda topic, payload, **kw: calls.append((topic, payload)))
+    key = contact_id(PERSON.id)
+    topic = f"homeassistant/device_tracker/google_maps_collector/{key}/config"
+    first = replace(PERSON, display_name="Synthetic Alice",
+        picture_url="https://lh3.googleusercontent.com/synthetic-picture-a")
+    publisher.sync(snapshot(first))
+    original = json.loads(next(p for t,p in calls if t == topic))
+    assert original["entity_picture"] == first.picture_url
+    assert "entity_picture" not in original["device"]
+    calls.clear()
+    publisher.sync(snapshot(first))
+    assert not any(t == topic for t,p in calls)
+    for picture in ("https://lh3.googleusercontent.com/synthetic-picture-b", None):
+        calls.clear()
+        publisher.sync(snapshot(replace(first, picture_url=picture)))
+        config = json.loads(next(p for t,p in calls if t == topic))
+        assert config.get("entity_picture") == picture
+        assert config["unique_id"] == original["unique_id"]
+        assert config["json_attributes_topic"] == original["json_attributes_topic"]
+        location = json.loads(next(p for t,p in calls if t.endswith("/location")))
+        assert location["latitude"] == PERSON.latitude
+        assert location["source_timestamp"] == PERSON.source_timestamp
+    calls.clear()
+    publisher.sync(snapshot(PERSON), force=True)
+    config = json.loads(next(p for t,p in calls if t == topic))
+    assert "entity_picture" not in config

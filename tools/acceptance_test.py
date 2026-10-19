@@ -150,7 +150,9 @@ print(json.dumps(out))
         assert location['full_name']=='Synthetic Acceptance' and location['nickname']=='Synthetic'
         assert location['address']=='Synthetic address' and location['battery_charging'] is False
         assert location['entity_picture']=='https://lh3.googleusercontent.com/synthetic'
-        assert json.loads(initial[f'homeassistant/device_tracker/google_maps_collector/{identity}/config'])['visible_by_default'] is True
+        tracker_config=json.loads(initial[f'homeassistant/device_tracker/google_maps_collector/{identity}/config'])
+        assert tracker_config['visible_by_default'] is True
+        assert tracker_config['entity_picture']==location['entity_picture']
         assert json.loads(initial[f'google_maps_collector/{identity}/details'])['last_seen']==location['last_seen']
         events.append('synthetic import and ARM64 non-root startup passed')
         before=command(compose+['exec','-T','collector','python','-c',
