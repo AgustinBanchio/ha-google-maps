@@ -1,0 +1,68 @@
+name: google-maps-collector
+services:
+  collector:
+    image: ${COLLECTOR_IMAGE:?Set a reviewed collector image reference}
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:rw,noexec,nosuid,size=8m]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    pids_limit: 64
+    mem_limit: 256m
+    environment:
+      MQTT_HOST: broker
+      MANAGEMENT_BIND: 0.0.0.0
+      POLL_SECONDS: ${POLL_SECONDS:-60}
+      FRESHNESS_SECONDS: ${FRESHNESS_SECONDS:-900}
+    ports: ["127.0.0.1:8787:8787"]
+    volumes:
+      - type: bind
+        source: ${COLLECTOR_PRIVATE_DIR:?Set absolute private bootstrap directory}/data
+        target: /data
+        bind:
+          create_host_path: false
+    secrets: [store-key, admin-verifier, mqtt-password]
+    depends_on: [broker]
+    networks: [collector]
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+  broker:
+    image: eclipse-mosquitto:2@sha256:38c0da4f2ef84284d47b3b3eeea1cb3bdeabe81ee10caf0cd5c5ff61ee3ea408
+    user: "1883:1883"
+    entrypoint: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:rw,noexec,nosuid,size=4m]
+    restart: unless-stopped
+    pids_limit: 32
+    mem_limit: 64m
+    ports: ["127.0.0.1:1883:1883"]
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto.acl:/mosquitto/config/mosquitto.acl:ro
+      - type: bind
+        source: ${COLLECTOR_PRIVATE_DIR:?Set absolute private bootstrap directory}/broker-data
+        target: /mosquitto/data
+        bind:
+          create_host_path: false
+    secrets: [broker-passwords]
+    networks: [collector]
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+networks:
+  collector:
+secrets:
+  store-key:
+    file: ${COLLECTOR_PRIVATE_DIR}/store-key
+  admin-verifier:
+    file: ${COLLECTOR_PRIVATE_DIR}/admin-verifier
+  mqtt-password:
+    file: ${COLLECTOR_PRIVATE_DIR}/mqtt-password
+  broker-passwords:
+    file: ${COLLECTOR_PRIVATE_DIR}/broker-passwords

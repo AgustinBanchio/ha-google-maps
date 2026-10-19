@@ -31,4 +31,4 @@ Do not run the original integration concurrently with the collector against the 
 
 Deployment requires the completed acceptance suite, explicit owner authorization, a pinned image and a documented rollback. Show the concrete proposed collector-only Compose changes. Do not restart the existing HA/OTBR/Matter stack or the Pi without explicit approval for that action.
 
-The planned credential import happens in the local authenticated collector UI, never in chat. Collector code is not implemented yet.
+Credential import uses the authenticated loopback collector UI, never chat. Local code exists; see tracker.md for verification and pending container/host acceptance.

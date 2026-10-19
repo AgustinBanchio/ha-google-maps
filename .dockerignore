@@ -1,0 +1,11 @@
+**
+!collector/
+!collector/pyproject.toml
+!collector/uv.lock
+!collector/src/
+!collector/src/**
+!LICENSE
+!deploy/
+!deploy/Dockerfile
+collector/src/**/__pycache__/
+collector/src/**/*.pyc

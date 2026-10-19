@@ -17,3 +17,6 @@ cookies.txt
 *.key
 .venv/
 .pytest_cache/
+
+# Collector build artifacts
+collector/dist/

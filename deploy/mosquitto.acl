@@ -1,0 +1,13 @@
+user collector
+topic write homeassistant/device_tracker/google_maps_collector/+/config
+topic write homeassistant/sensor/google_maps_collector/+/config
+topic write homeassistant/binary_sensor/google_maps_collector/session/config
+topic write google_maps_collector/#
+topic read homeassistant/status
+
+user homeassistant
+topic read homeassistant/device_tracker/google_maps_collector/+/config
+topic read homeassistant/sensor/google_maps_collector/+/config
+topic read homeassistant/binary_sensor/google_maps_collector/session/config
+topic read google_maps_collector/#
+topic write homeassistant/status

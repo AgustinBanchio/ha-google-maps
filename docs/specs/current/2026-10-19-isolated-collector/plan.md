@@ -109,4 +109,4 @@ AC12 -> 1.1, 3.1, 3.2, 4.1.
 
 ## Verification
 
-The commands above describe work to run after implementation, not checks already passed. No collector test suite currently exists. At preparation time verify only the unchanged upstream baseline, handoff links, absence of sensitive tracked files, helper syntax/connection and GitHub/local revision equality.
+The commands above are task requirements. The collector suite now exists; consult tracker.md for fresh observed results and pending container/host checks. Do not infer a pass from the existence of test code or CI configuration.

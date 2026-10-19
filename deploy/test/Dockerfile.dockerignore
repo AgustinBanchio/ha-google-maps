@@ -1,0 +1,14 @@
+**
+!collector/
+!collector/pyproject.toml
+!collector/uv.lock
+!collector/src/
+!collector/src/**
+!collector/tests/
+!collector/tests/**
+!tools/
+!tools/bootstrap_collector.py
+!deploy/
+!deploy/**
+**/__pycache__/
+**/*.pyc

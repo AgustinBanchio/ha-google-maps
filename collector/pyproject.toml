@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "google-maps-collector"
+version = "0.1.0"
+description = "Isolated Google Maps location collector for Home Assistant"
+requires-python = ">=3.13,<3.14"
+license = "Unlicense"
+dependencies = [
+  "requests==2.34.2",
+  "cryptography==50.0.2",
+  "paho-mqtt==2.1.0",
+  "starlette==1.9.0",
+  "uvicorn==0.54.0",
+  "python-multipart==0.0.32",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "httpx==0.28.1"]
+
+[project.scripts]
+google-maps-collector = "google_maps_collector.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+
+[tool.hatch.build.targets.sdist]
+include = ["src/google_maps_collector", "pyproject.toml", "uv.lock"]

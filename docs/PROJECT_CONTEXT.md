@@ -33,6 +33,6 @@ A stronger host boundary or reducing HA privileges may be assessed later. Do not
 
 ## Status and scope
 
-Preparation only is complete. Collector code, credentials, releases and deployment do not exist yet. The repository's custom_components/google_maps files still implement the original upstream integration.
+Local collector implementation has begun on the owner's continue instruction. See tracker.md for completed tasks and exact verification. The original custom_components/google_maps runtime is unchanged. No real Google credentials, release image or Pi deployment have been created. Docker container/ARM64 evidence and host acceptance remain outstanding.
 
-Detailed technical defaults are written in spec.md so a new thread need not repeat design questions. The implementation plan is ready for the owner's next implementation instruction; that instruction is not permission to alter unrelated services.
+The implementation instruction does not authorize remote deployment or changes to unrelated services.

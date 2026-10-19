@@ -1,6 +1,6 @@
 # Continue this project
 
-This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration is retained unchanged. The next feature is a separate Google Maps location collector feeding Home Assistant through MQTT.
+This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. Packaging and release verification are in progress; nothing has been deployed on the Pi.
 
 Read these in order:
 
@@ -11,11 +11,10 @@ Read these in order:
 5. [Static upstream review](docs/audits/2026-10-19-upstream-2.0.3/REVIEW.md).
 6. [Environment assessment](docs/ENVIRONMENT_ASSESSMENT.md).
 7. [Operations access](docs/OPERATIONS.md).
+8. [Collector setup](docs/SETUP.md) and [recovery](docs/RECOVERY.md).
 
-Current state: fork, local checkout and handoff prepared; collector implementation has not started. No Google credentials have been provided. Nothing has been deployed or restarted on the Raspberry Pi.
+Use tracker.md for exact current evidence and next action. No real Google credentials have been supplied. Docker's Linux engine was unavailable during Windows implementation; container builds/recovery and ARM64 execution must not be reported as passed until observed.
 
-The existing upstream README describes the original integration, not the planned collector. Import this directory as a T3 project and ask the new thread to read START_HERE.md and continue from tracker.md.
+The existing upstream README describes the original integration. Collector source and tests live in collector/, packaging in deploy/. The owner's local checkout is D:/repos/ha-google-maps. Ignored .local/ contains private operational context and isolated development tooling; a fresh clone does not include it.
 
-The owner's local checkout is D:/repos/ha-google-maps. An ignored .local directory contains private operational context and raw host reports on that checkout only. A fresh clone will not contain those reports.
-
-There is no need for the originating chat. All accepted requirements, security boundaries and next tasks are in this repository.
+Continue from the first unfinished tracker task. Do not change existing smart-home services or deploy the collector without the separate required authorization. All accepted requirements and security boundaries are recorded here; the originating conversation is not needed.
