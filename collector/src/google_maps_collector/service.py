@@ -81,7 +81,9 @@ class Service:
                 # Battery data may change without a newer source observation.
                 updated[person.id] = replace(previous, battery=person.battery,
                     display_name=person.display_name, nickname=person.nickname,
-                    picture_url=person.picture_url, battery_charging=person.battery_charging)
+                    picture_url=person.picture_url, battery_charging=person.battery_charging,
+                    address=person.address if person.source_timestamp == previous.source_timestamp else previous.address,
+                    country_code=person.country_code if person.source_timestamp == previous.source_timestamp else previous.country_code)
         self.store.save(self._document(rotated, updated, present, now))
         self.cookies, self.people, self.present = rotated, updated, present
         self.last_success = now

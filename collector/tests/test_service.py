@@ -193,14 +193,27 @@ def test_old_store_migration_and_name_only_poll_preserve_fix(setup):
     rebuilt = Service(service.config, service.store, google, lambda: now[0])
     original = rebuilt.people["synthetic"]
     assert original.display_name == ""
-    google.people = [replace(original, display_name="Synthetic Alice", nickname="Alice", battery_charging=True, address="Rejected older address", latitude=1.25)]
+    google.people = [replace(original, display_name="Synthetic Alice", nickname="Alice", battery_charging=True, address="Recovered same-fix address", latitude=1.25)]
     rebuilt.poll()
     current = rebuilt.people["synthetic"]
     assert current.display_name == "Synthetic Alice"
     assert current.nickname == "Alice" and current.battery_charging is True
-    assert current.address == original.address
+    assert current.address == "Recovered same-fix address"
     assert current.latitude == original.latitude
     assert current.source_timestamp == original.source_timestamp
     restored = Service(service.config, service.store, google, lambda: now[0])
     assert restored.people["synthetic"].display_name == "Synthetic Alice"
     assert set(restored.management_status()) == {"session_status", "last_successful_poll", "contact_count", "approximate_cookie_expiry"}
+
+
+def test_older_metadata_does_not_replace_location_address(setup):
+    service, google, _ = setup
+    service.import_cookies(parse_cookies(COOKIE))
+    original = service.people["synthetic"]
+    google.people = [replace(original, source_timestamp=original.source_timestamp-1,
+        address="Rejected older address", country_code="ZZ", nickname="Updated nickname")]
+    service.poll()
+    current = service.people["synthetic"]
+    assert current.address == original.address and current.country_code == original.country_code
+    assert current.source_timestamp == original.source_timestamp
+    assert current.nickname == "Updated nickname"

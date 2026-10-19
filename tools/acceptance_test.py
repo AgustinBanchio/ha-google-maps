@@ -123,7 +123,7 @@ import paho.mqtt.client as p
 out={}; done=Event()
 c=p.Client(p.CallbackAPIVersion.VERSION2)
 c.username_pw_set('homeassistant',Path('/acceptance/private/ha-password').read_text())
-c.on_connect=lambda c,u,f,r,prop:c.subscribe('google_maps_collector/#',qos=1)
+c.on_connect=lambda c,u,f,r,prop:c.subscribe([('google_maps_collector/#',1),('homeassistant/device_tracker/google_maps_collector/+/config',1)])
 def message(c,u,m):
  out[m.topic]=m.payload.decode()
 c.on_message=message
