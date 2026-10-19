@@ -1,6 +1,10 @@
-# Continue this project
+# Current direction: course correction
 
-This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. ARM64 broker/recovery tests and release validation now pass. The separate production collector/broker is deployed and verified after explicit approval. Original Maps person data and tracking defaults are restored; the remaining owner step is to make previously hidden HA trackers Visible and check map/People linkage. The existing smart-home stack remains unchanged.
+Read [the course-correction proposal](docs/COURSE_CORRECTION.md) first. The owner clarified that the intended solution is the original HA integration with external Google credential/session handling and a small maintainable upstream patch. The running MQTT collector is a reimplementation and is not the intended final architecture. The proposal is ready for review; replacement API/client code and HA migration have not been implemented. Keep the working deployment and existing stack intact during preparation.
+
+## Running deployment and historical implementation
+
+This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. ARM64 broker/recovery tests and release validation now pass. The separate production collector/broker is deployed and verified after explicit approval. Selected Maps data and tracking defaults have been matched through MQTT; complete upstream equivalence is not established; the remaining owner step is to make previously hidden HA trackers Visible and check map/People linkage. The existing smart-home stack remains unchanged.
 
 Read these in order:
 

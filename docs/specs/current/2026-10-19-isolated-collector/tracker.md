@@ -1,11 +1,11 @@
 # Tracker: isolated Google Maps collector
 
 Plan: [plan.md](plan.md). Updated: 2026-10-19.
-Status: COLLECTOR_PARITY_DEPLOYED. Owner Google import and HA MQTT setup are complete. The upstream-data/behaviour correction is committed, tested and deployed; Task 4.2 retains the owner's HA map/Person UI check and the separately unauthorized full Pi reboot.
+Status: COURSE_CORRECTION_PROPOSED. The deployed MQTT implementation remains running. The owner clarified that the final solution must preserve the original HA implementation with a small external-credential/session transport patch; selected MQTT parity checks are not complete equivalence. See docs/COURSE_CORRECTION.md.
 
 ## Exact next action
 
-Owner opens each previously hidden Maps location entity in HA, selects its settings gear, enables Visible and saves, then checks the map and Settings > People tracker linkage. Discovery now uses Google names and visible defaults, but HA preserves existing registry Hidden settings. No credential re-import, integration re-add, existing stack restart or reboot is needed. Current release source and all fresh evidence are in verification.md and the final entry below.
+Review docs/COURSE_CORRECTION.md, then prepare tasks for the original HA integration plus a narrow external-session data source and actual HA-level equivalence tests. Do not continue expanding the MQTT reimplementation as the final architecture. Do not infer that replacement API/client code, tests or migration already exist. Keep the running deployment and existing HA/Matter/OTBR stack untouched while preparing the correction.
 
 ## Tasks
 
@@ -104,3 +104,8 @@ Owner reports pictures missing in HA. HA 2026.10.1 mqtt/entity.py blocks entity_
 Picture correction DONE: source f5a05b9024bec24b47bde13b4c32ad74f2c3a670; deployed ARM64 image sha256:feda30345cf8c8f73ec9ac78f30ea5c167382e3d2890fc5eaa4dad4c6f3031ce. Fresh Windows 97 passed/2 broker skips, disposable ARM64 suite, extended picture-discovery/recovery assertions, release validator and both GitHub workflows passed. HA common schema was checked directly: entity_picture is a supported cv.url discovery field, while JSON attributes explicitly block it. Only collector was replaced with backup/rollback; existing credentials/IDs, broker and original three-container baseline are unchanged. Live aggregate: four discovery picture URLs, matching all four profile URLs in private state, across five trackers (account holder has no Google picture). No actual URLs/photos/name/location data or credentials were output. Remaining UI confirmation: refresh Maps location entity/map and check picture rendering. Device pages do not have per-device profile photos.
 
 Owner asked whether a custom integration would be better. Recommendation: a thin HA adapter reading a scoped read-only collector API would better preserve original native entity behaviour/options while Google cookies remain in the isolated collector. MQTT supports the current pictures; the issue was this adapter's missing discovery field. This is a recommendation, not authorization to replace MQTT or modify/restart HA. No native-adapter/API implementation or migration has begun. Plan any subsequent change around stable entity/Person links and keep the running setup until migration is verified. Exact next action: answer the architectural question; current MQTT picture fix is deployed and pushed, owner confirms frontend rendering.
+
+
+## Source-preserving course correction (PROPOSED)
+
+Owner clarified the objective: base the work on the original integration, externalize Google credential/session handling, preserve original people/location behaviour and keep future upstream ports small. Acknowledged that the current MQTT collector duplicates parser, tracking and entity behaviour; prior selected parity assertions are not proof of complete equivalence. Fresh Git check at f456f7b: nine upstream Python modules and all files under custom_components/google_maps remain unchanged from b2132123d46c47e5761d5d91cc08ca6b712fe6c1. Prepared docs/COURSE_CORRECTION.md with source-preserving recommendation, reusable security work, explicit source/transport patch boundary, upstream-client reuse, behavioural test requirements and controlled MQTT-to-native migration/rollback. This turn changed documentation only: no new API/client, HA installation, remote action or service restart. Exact next action: review the proposed direction and produce an implementation tracker; no pending implementation/tests should be claimed to exist.

@@ -18,11 +18,13 @@ Retrieve locations already shared with the owner's personal Google Maps account 
 - Carry all project knowledge in the repository because the originating conversation will not be reused.
 - Local checkout: D:/repos/ha-google-maps. The owner will import it into T3. A Pi source checkout is optional and has not been created.
 
-## Chosen approach
+## Corrected direction and current implementation
 
-Retain the upstream integration for provenance and extract its small Maps client into a standalone Python service. Use standard HA MQTT device trackers rather than loading the Google cookie into HA's Python process. Add a narrowly scoped authenticated management page and persistent encrypted storage.
+The owner clarified that the original HA integration must remain the implementation of person/location reporting and tracking behaviour, with Google credential/session handling externalized through a small source/transport adapter. Future upstream updates should apply to that original code with a limited, documented authentication patch. See [course correction](COURSE_CORRECTION.md) for the proposed boundary, reuse, verification and migration.
 
-Use a separate Compose project for the collector and its small authenticated Mosquitto broker. No broker was observed on the Pi's standard ports or in its running containers; a broker elsewhere was not ruled out. The provided broker is the default so the plan has no dependency on an unspecified service. HA's host-network container connects to the broker's loopback-published port. A future existing-broker override must preserve equivalent ACLs.
+The currently running collector/MQTT implementation is a different architecture. It duplicates the parser/tracking policy and replaces HA's original entities; selected parity tests do not establish complete equivalence. Keep it running while the source-preserving correction is prepared. All original custom_components/google_maps files remain identical to the pinned upstream baseline, so they can be used directly as the foundation.
+
+The external encrypted store/import UI and operations tooling may be reused after review. A native data API/client does not exist yet. Do not infer approval to install/restart HA or remove the production broker from the discussion of a proposed architecture.
 
 ## Security judgement
 
@@ -34,6 +36,6 @@ A stronger host boundary or reducing HA privileges may be assessed later. Do not
 
 ## Status and scope
 
-The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. The owner has imported a real Google session and added HA MQTT. Current work corrects names/map visibility and upstream data parity. See tracker.md for exact evidence and residual acceptance checks.
+The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. The owner has imported a real Google session and added HA MQTT. Current work is the source-preserving course correction described above; the new transport/API remains proposed. See tracker.md for exact evidence and residual acceptance checks.
 
 The owner requests direct pushes in the personal repository without PRs. Deployment authorization covers only this new project; existing stack/service changes and full Pi reboot still require separate explicit approval.

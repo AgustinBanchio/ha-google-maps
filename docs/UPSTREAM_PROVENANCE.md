@@ -1,5 +1,7 @@
 # Collector client provenance
 
+Current direction: see [course correction](COURSE_CORRECTION.md). This document describes the deployed collector extraction/reimplementation; its selected field/behaviour comparisons are not proof of complete upstream equivalence. The replacement should use upstream code directly with a small external-session transport boundary.
+
 Source: custom_components/google_maps/gm_loc_sharing.py at audited upstream b2132123d46c47e5761d5d91cc08ca6b712fe6c1 (Unlicense, retained in repository LICENSE and Git history).
 
 The collector copy derives the fixed URL, pb query and shared-person array indices from that file. Shared-person IDs, coordinates, accuracy, millisecond timestamps and optional battery retain their upstream interpretation. Full name, nickname, profile picture, address, country code and charging state now retain the upstream field interpretation too. Account-holder location is included when returned by Google, using a stable local identity and the label Account holder instead of requiring the account email. Only bounded printable labels and HTTPS Google-hosted profile images are accepted.

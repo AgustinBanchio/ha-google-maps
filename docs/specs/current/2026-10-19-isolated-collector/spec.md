@@ -1,6 +1,6 @@
 # Isolated Google Maps collector: specification
 
-Status: implemented and deployed; current owner-directed correction preserves original HA behaviour/data and changes credential handling only. The separate collector/broker deployment is explicitly authorized; existing services remain excluded.
+Status: historical specification for the deployed MQTT implementation. The owner clarified a source-preserving objective; docs/COURSE_CORRECTION.md proposes the replacement direction. Selected behaviour/data tests do not prove full upstream equivalence. The separate collector/broker deployment is explicitly authorized; existing services remain excluded.
 
 ## Goal
 

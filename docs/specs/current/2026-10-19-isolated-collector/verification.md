@@ -1,5 +1,7 @@
 # Verification: isolated collector
 
+Scope correction: the following results verify the deployed MQTT implementation and selected comparisons only. They do not establish complete equivalence to the original HA integration. The owner requires the source-preserving architecture described in docs/COURSE_CORRECTION.md; its adapter/API and HA-level equivalence tests do not exist yet.
+
 19 October 2026. Upstream-data/behaviour correction: implementation, ARM64 recovery, release validation and live collector deployment PASS. End-to-end acceptance remains PARTIAL only for the owner's HA map/Person UI check and the separately unauthorized full Pi reboot.
 
 | Criterion | Fresh evidence | Verdict |
