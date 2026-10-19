@@ -1,13 +1,11 @@
 # Tracker: isolated Google Maps collector
 
 Plan: [plan.md](plan.md). Updated: 2026-10-19.
-Status: IN_PROGRESS: owner-requested upstream behaviour parity. The isolated production collector/broker is deployed and verified; real Google import and HA MQTT/People setup remain owner actions. Nine implementation tasks are DONE; Task 4.2 retains only live owner acceptance and the separately unauthorized reboot check.
+Status: COLLECTOR_PARITY_DEPLOYED. Owner Google import and HA MQTT setup are complete. The upstream-data/behaviour correction is committed, tested and deployed; Task 4.2 retains the owner's HA map/Person UI check and the separately unauthorized full Pi reboot.
 
 ## Exact next action
 
-Finish the parity correction described at the end of this tracker, run fresh ARM64/recovery checks at its clean source revision, and update only the authorized separate collector image with encrypted-state rollback. The owner already imported Google cookies privately and configured HA MQTT. Do not read credentials or modify/restart the existing stack.
-
-After owner setup, verify real polling, discovery and Person behavior. A full Pi reboot remains a separate explicit authorization; no reboot or existing stack restart is necessary to add MQTT. All persistent deployment approval requirements were satisfied by the owner's explicit collector/broker-only approval.
+Owner opens each previously hidden Maps location entity in HA, selects its settings gear, enables Visible and saves, then checks the map and Settings > People tracker linkage. Discovery now uses Google names and visible defaults, but HA preserves existing registry Hidden settings. No credential re-import, integration re-add, existing stack restart or reboot is needed. Current release source and all fresh evidence are in verification.md and the final entry below.
 
 ## Tasks
 
@@ -79,7 +77,7 @@ Owner setup follow-up: the tunnel helper fell back to an SSH password in T3's Se
 
 GitHub safety follow-up: verified the mistakenly created upstream draft #61 and fork PR #1 are both CLOSED with mergedAt null. GitHub CLI default and Git remote.pushDefault are now explicitly set to the owner fork/origin; no further PR workflow is used.
 
-## Names and map usability correction (IN_PROGRESS)
+## Names and upstream behaviour correction (DONE)
 
 Owner clarified that Google display names and locations are intended HA data; only authentication material requires isolation. The original integration used Google Maps <full_name>, GPS attributes and optional picture/nickname. The initial collector discarded display names and hid trackers, which made identification/map use poor. Read-only aggregate broker inspection confirms four fresh GPS payloads with coordinates and four hidden trackers; no real name/location values were returned.
 
@@ -93,3 +91,6 @@ ARM64 first pass: 87 tests passed. Extended recovery check exposed a harness omi
 
 
 Owner clarified the intended scope: same HA behaviour as the original, with safer credential handling. The e5f7520 ARM64 suite/recovery/release validation passed, but that candidate was not deployed because further comparison found behavioural differences. Corrected defaults now retain stationary/last-known fixes through Google errors, apply upstream 1000 m GPS quality selection, preserve three-minute missing-contact grace across restart, and update tracker battery/profile attributes without changing accepted GPS/source last_seen. Strict age expiry is opt-in (default 0), and account-holder collection can be disabled. Fresh local suite: 96 passed, 2 broker-dependent skips, one existing deprecation warning. Exact next action: commit/push this corrected behaviour, rerun disposable ARM64 suite/recovery/release, then collector-only deployment and aggregate live field/identity/baseline verification. No production change has yet occurred for this correction.
+
+
+Correction DONE, 2026-10-19: deployed source c2be4af5a342f9d4f357bd34ac18a5995cada1da, ARM64 image sha256:d9788abc10c012248e1d612494c2aa1091dd3817639933422dabfe77d9036c6c. Fresh Windows suite 96 passed/2 broker skips; disposable ARM64 suite, four grouped production-image synthetic recovery/privacy checks, full release validation and GitHub Collector/Validate workflows passed. Only production collector was stopped/backed up/recreated. Existing encrypted session and credentials were reused successfully; no new key/password provisioning. Live aggregate MQTT result: five named trackers/visible-default configs, five complete location-attribute payloads, five details payloads, four profile images, session ready. The fifth tracker is the account holder. Original tracker IDs are preserved; production broker and all three original container baselines are identical. No actual names/locations/credentials were returned in output or committed. Private matching encrypted-state/old-env rollback is retained. The Pi release checkout remains at the exact deployed code revision; Windows main also includes final handoff documentation. Exact next action: owner enables Visible on previously hidden entities and verifies HA map/People behaviour. No reboot or existing-stack change is authorized or needed.

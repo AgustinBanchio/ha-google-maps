@@ -1,6 +1,6 @@
 # Continue this project
 
-This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. ARM64 broker/recovery tests and release validation now pass. The separate production collector/broker is deployed and verified after explicit approval. The existing smart-home stack remains unchanged.
+This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. ARM64 broker/recovery tests and release validation now pass. The separate production collector/broker is deployed and verified after explicit approval. Original Maps person data and tracking defaults are restored; the remaining owner step is to make previously hidden HA trackers Visible and check map/People linkage. The existing smart-home stack remains unchanged.
 
 Read these in order:
 

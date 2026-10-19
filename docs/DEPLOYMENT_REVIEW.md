@@ -1,6 +1,6 @@
 # Collector deployment proposal
 
-Deployed 19 October 2026 after the owner explicitly approved only this separate project and its private credentials. The earlier automatic-review block is resolved. No real Google session has been supplied; HA setup remains an owner action.
+Deployed 19 October 2026 after the owner explicitly approved only this separate project and its private credentials. The earlier automatic-review block is resolved. The owner has since imported the Google session and configured HA MQTT. The upstream-parity collector update described below is now deployed and verified.
 
 ## Exact proposed addition
 
@@ -30,3 +30,14 @@ Owner action then remains: use the SSH management tunnel, upload the Google sess
 Rollback stops/removes only `google-maps-collector` with its own env/file/project options. Preserve the complete new private directory and image identity; do not use volume deletion. The existing smart-home stack is never included in that command.
 
 No change or restart to HA, Matter Server, OTBR, Docker daemon, firewall, SSH, tunnel services or existing privileges is proposed. No Pi reboot is proposed or authorized. Trusted-host limitations remain accepted.
+
+## Authorized upstream-parity collector update
+
+Owner requested original HA data and behaviour with safer credential handling. Candidate source c2be4af5a342f9d4f357bd34ac18a5995cada1da; immutable ARM64 image sha256:d9788abc10c012248e1d612494c2aa1091dd3817639933422dabfe77d9036c6c. Fresh disposable ARM64 suite, extended synthetic recovery harness and release metadata validation all passed; GitHub Collector and Validate workflows passed.
+
+Only the collector is stopped briefly for an encrypted-data backup, then recreated with `up -d --no-deps collector`. The production broker and original three smart-home containers are not restarted. Credentials, private mounts, privileges, listeners and existing Compose stack remain unchanged. No bootstrap or new credentials are needed. Defaults restore original GPS accuracy selection, last-known availability and missing-contact grace; all upstream person fields reach HA with stable existing IDs.
+
+Rollback retains the old immutable image, ignored env and encrypted data backup. Stop only collector, restore its matching encrypted data with original ownership, restore the old image/env with FRESHNESS_SECONDS=900 (required by the old image), then recreate only collector. Existing keys and broker credentials stay in place. The added Maps details entities may remain registered after image rollback; original tracker identities are unchanged. No key/store values or real names/locations are returned in verification; inspect only aggregate MQTT completeness and selected baseline metadata.
+
+
+Update completed: only collector was replaced. Its existing encrypted session and credentials loaded successfully; all five named location payloads have complete upstream attribute schemas and four shared-contact profile images. Original tracker IDs are preserved, the broker is unchanged, and all three original service baselines still match. Private rollback evidence is retained outside Git. Remaining owner action is the HA Visible toggle/map/Person check; no credential re-import is required.
