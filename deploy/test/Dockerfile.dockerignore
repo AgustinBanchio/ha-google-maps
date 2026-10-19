@@ -12,3 +12,4 @@
 !deploy/**
 **/__pycache__/
 **/*.pyc
+!tools/provision_collector.py
