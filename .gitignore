@@ -4,3 +4,16 @@ __pycache__/
 *$py.class
 
 .vscode/
+
+# Private credentials and operational metadata
+.local/
+.ssh-runs/
+.env
+.env.*
+!.env.example
+cookies.txt
+*.har
+*.pem
+*.key
+.venv/
+.pytest_cache/

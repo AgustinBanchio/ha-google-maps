@@ -1,5 +1,8 @@
 # <img src="https://brands.home-assistant.io/google_maps/icon.png" alt="Google Maps" width="50" height="50"/> Google Maps
 
+> **Fork status:** The original integration runtime is unchanged. A separate collector is planned to keep Google credentials out of HA. Start with [START_HERE.md](START_HERE.md) for the specification, plan, audit and next steps. The collector has not been implemented or deployed.
+
+
 This is a custom version of the Home Assistant built-in [Google Maps](https://www.home-assistant.io/integrations/google_maps/) integration.
 
 > IMPORTANT: Before using this custom integration, all "legacy" YAML configuration entries and associated entries in `known_devices.yaml` must be [removed](#removing-legacy-trackers).
