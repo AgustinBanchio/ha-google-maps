@@ -41,3 +41,11 @@ Rollback retains the old immutable image, ignored env and encrypted data backup.
 
 
 Update completed: only collector was replaced. Its existing encrypted session and credentials loaded successfully; all five named location payloads have complete upstream attribute schemas and four shared-contact profile images. Original tracker IDs are preserved, the broker is unchanged, and all three original service baselines still match. Private rollback evidence is retained outside Git. Remaining owner action is the HA Visible toggle/map/Person check; no credential re-import is required.
+
+
+## Tracker picture discovery correction
+
+Source f5a05b9024bec24b47bde13b4c32ad74f2c3a670; immutable ARM64 image sha256:feda30345cf8c8f73ec9ac78f30ea5c167382e3d2890fc5eaa4dad4c6f3031ce. HA ignores entity_picture from JSON extra attributes; publish it via tracker discovery and refresh on change/removal. Fresh Windows suite: 97 passed/2 broker skips. Disposable ARM64 suite, extended production-image discovery/recovery checks and release metadata validation pass. Apply the same collector-only stop/encrypted-state backup/up --no-deps rollout; no broker/HA/Thread change. Rollback restores the immediately preceding image/env/data with its existing freshness default (do not force the legacy 900-second setting for this release). Verify aggregate discovery picture counts match private state without returning URLs or fetching credential files.
+
+
+Picture rollout completed successfully: four supported discovery picture URLs match the private profile data, five tracker IDs remain stable, credentials were reused, and the broker plus all three original services are unchanged. Only collector was replaced; no HA restart or reboot. Matching private backup/release metadata is retained outside Git.
