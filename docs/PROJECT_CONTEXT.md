@@ -12,6 +12,7 @@ Retrieve locations already shared with the owner's personal Google Maps account 
 - The Pi also runs T3, Codex and Claude. Administrative tools can use a host user with Docker access and passwordless sudo.
 - A normal Pi reboot, Docker restart or Compose recreation must preserve the session and recover automatically.
 - Provide comfortable first-time credential import and later replacement.
+- Preserve all original person/location fields in HA; names and locations are intended HA data.
 - Keep Google credentials out of HA configuration, entity data, MQTT, logs, repository files and routine HA backups.
 - Future upstream updates are audited on request before merging into the fork. No automatic merge/deploy.
 - Carry all project knowledge in the repository because the originating conversation will not be reused.
@@ -33,6 +34,6 @@ A stronger host boundary or reducing HA privileges may be assessed later. Do not
 
 ## Status and scope
 
-The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. No real Google session has been supplied; owner import and HA MQTT/People setup are next. See tracker.md for exact evidence and residual acceptance checks.
+The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. The owner has imported a real Google session and added HA MQTT. Current work corrects names/map visibility and upstream data parity. See tracker.md for exact evidence and residual acceptance checks.
 
 The owner requests direct pushes in the personal repository without PRs. Deployment authorization covers only this new project; existing stack/service changes and full Pi reboot still require separate explicit approval.

@@ -60,6 +60,12 @@ class Person:
     gps_accuracy: float
     source_timestamp: float
     battery: int | None = None
+    display_name: str = ""
+    nickname: str = ""
+    picture_url: str | None = None
+    address: str = ""
+    country_code: str = ""
+    battery_charging: bool | None = None
 
 
 def filter_cookies(jar: CookieJar) -> CookieJar:
@@ -116,6 +122,29 @@ def _number(value, low, high):
     return value
 
 
+def display_name(value) -> str:
+    """A bounded human label; never an identity or a log field."""
+    if not isinstance(value, str):
+        return ""
+    return " ".join("".join(c for c in value if c.isprintable()).split())[:128]
+
+
+def picture_url(value) -> str | None:
+    if not isinstance(value, str) or len(value) > 2048:
+        return None
+    try:
+        url = urlsplit(value)
+        host = url.hostname or ""
+        if (url.scheme == "https" and not url.username and not url.password
+                and url.port in {None, 443}
+                and any(host == domain or host.endswith("." + domain)
+                        for domain in ("googleusercontent.com", "ggpht.com", "google.com"))):
+            return value
+    except ValueError:
+        pass
+    return None
+
+
 def parse_response(body: bytes) -> list[Person]:
     try:
         if not body.startswith(b")]}'\n"):
@@ -126,23 +155,29 @@ def parse_response(body: bytes) -> list[Person]:
         if data[6] == "GgA=":
             raise InvalidSession()
         if data[0] is None:
-            return []
+            data[0] = []
         if not isinstance(data[0], list):
             raise InvalidData()
         people = []
         seen = set()
-        for entry in data[0]:
-            # Upstream shared_from_data indices; no account email/name/address/picture.
-            if not isinstance(entry, list) or len(entry) < 7:
+        entries = [(entry, False) for entry in data[0]]
+        # Upstream's optional account-holder location has no profile metadata.
+        # A local stable ID avoids requiring or publishing the account email.
+        if len(data) > 9 and data[9] is not None:
+            entries.append((data[9], True))
+        for entry, account in entries:
+            # Upstream shared_from_data/acct_from_data indices.
+            if not isinstance(entry, list) or len(entry) < (2 if account else 7):
                 raise InvalidData()
             if entry[1] is None:  # A shared contact with no fix is not a parser failure.
                 continue
-            identity = entry[6][0]
+            profile = ["google-maps-account", None, "Account holder", "Account holder"] if account else entry[6]
+            identity = profile[0]
             if not isinstance(identity, str) or not identity or len(identity) > 512 or identity in seen:
                 raise InvalidData()
             seen.add(identity)
             battery = None
-            if len(entry) > 13 and isinstance(entry[13], list) and len(entry[13]) > 1:
+            if not account and len(entry) > 13 and isinstance(entry[13], list) and len(entry[13]) > 1:
                 battery = entry[13][1]
                 if type(battery) is not int or not 0 <= battery <= 100:
                     battery = None
@@ -151,6 +186,13 @@ def parse_response(body: bytes) -> list[Person]:
                 _number(entry[1][1][1], -180, 180),
                 _number(entry[1][3], 0, 1_000_000),
                 _number(entry[1][2], 0, 100_000_000_000_000) / 1000, battery,
+                display_name(profile[2]) if len(profile) > 2 else "",
+                display_name(profile[3]) if len(profile) > 3 else "",
+                picture_url(profile[1]) if len(profile) > 1 else None,
+                display_name(entry[1][4]) if len(entry[1]) > 4 else "",
+                display_name(entry[1][6]) if len(entry[1]) > 6 else "",
+                bool(entry[13][0]) if not account and len(entry) > 13
+                    and isinstance(entry[13], list) and entry[13] else None,
             ))
         return people
     except (ValueError, TypeError, IndexError, KeyError, RecursionError):

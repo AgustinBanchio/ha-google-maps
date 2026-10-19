@@ -42,7 +42,7 @@ class SyntheticGoogle:
         data = json.loads(control.read_text())
         if data.get('reject'):
             raise google_maps.InvalidSession()
-        return [google_maps.Person('synthetic-acceptance-person', 0.5, 0.25, 25, data['timestamp'], data['battery'])], jar
+        return [google_maps.Person('synthetic-acceptance-person', 0.5, 0.25, 25, data['timestamp'], data['battery'], display_name='Synthetic Acceptance', nickname='Synthetic', picture_url='https://lh3.googleusercontent.com/synthetic', address='Synthetic address', country_code='ZZ', battery_charging=False)], jar
     def close(self):
         pass
 original = service.Service
@@ -144,6 +144,12 @@ print(json.dumps(out))
         topic=next(t for t in initial if t.endswith('/location'))
         identity=topic.split('/')[1]
         source=json.loads(initial[topic])['source_timestamp']
+        location=json.loads(initial[topic])
+        assert location['full_name']=='Synthetic Acceptance' and location['nickname']=='Synthetic'
+        assert location['address']=='Synthetic address' and location['battery_charging'] is False
+        assert location['entity_picture']=='https://lh3.googleusercontent.com/synthetic'
+        assert json.loads(initial[f'homeassistant/device_tracker/google_maps_collector/{identity}/config'])['visible_by_default'] is True
+        assert json.loads(initial[f'google_maps_collector/{identity}/details'])['last_seen']==location['last_seen']
         events.append('synthetic import and ARM64 non-root startup passed')
         before=command(compose+['exec','-T','collector','python','-c',
             "from pathlib import Path;import hashlib;print(hashlib.sha256(Path('/run/secrets/store-key').read_bytes()).hexdigest())"])
@@ -175,6 +181,8 @@ print(json.dumps(out))
         logs=command(compose+['logs','--no-color'])
         assert 'SYNTHETIC_SECRET' not in logs
         assert 'synthetic-acceptance-person' not in logs
+        assert 'Synthetic Acceptance' not in logs
+        assert 'Synthetic address' not in logs
         events.append('container logs contain no credential/contact canaries')
         # Inspect selected fields, never dump container environments.
         selected=command(compose+['exec','-T','collector','python','-c','import os;print(os.getuid())'])

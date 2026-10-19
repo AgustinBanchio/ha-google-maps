@@ -180,3 +180,27 @@ def test_restart_network_failure_does_not_validate_stored_session(setup):
     assert rebuilt.status == "network_failure"
     assert not rebuilt.snapshot()["session_valid"]
     assert not rebuilt.snapshot()["available"]
+
+
+def test_old_store_migration_and_name_only_poll_preserve_fix(setup):
+    service, google, now = setup
+    service.import_cookies(parse_cookies(COOKIE))
+    saved = service.store.load()
+    for item in saved["people"]:
+        for field in ("display_name", "nickname", "picture_url", "address", "country_code", "battery_charging"):
+            item.pop(field, None)
+    service.store.save(saved)
+    rebuilt = Service(service.config, service.store, google, lambda: now[0])
+    original = rebuilt.people["synthetic"]
+    assert original.display_name == ""
+    google.people = [replace(original, display_name="Synthetic Alice", nickname="Alice", battery_charging=True, address="Rejected older address", latitude=1.25)]
+    rebuilt.poll()
+    current = rebuilt.people["synthetic"]
+    assert current.display_name == "Synthetic Alice"
+    assert current.nickname == "Alice" and current.battery_charging is True
+    assert current.address == original.address
+    assert current.latitude == original.latitude
+    assert current.source_timestamp == original.source_timestamp
+    restored = Service(service.config, service.store, google, lambda: now[0])
+    assert restored.people["synthetic"].display_name == "Synthetic Alice"
+    assert set(restored.management_status()) == {"session_status", "last_successful_poll", "contact_count", "approximate_cookie_expiry"}

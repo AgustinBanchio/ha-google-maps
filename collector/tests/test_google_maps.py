@@ -56,6 +56,7 @@ def test_constructed_request(monkeypatch):
     assert (people[0].latitude, people[0].longitude) == (0.5, 0.25)
     assert people[0].source_timestamp == 1800000000
     assert people[0].battery == 73
+    assert people[0].display_name == "SYNTHETIC_NAME"
     assert "SYNTHETIC" not in repr(people[0])
 
 
@@ -109,3 +110,52 @@ def test_invalid_coordinates_and_duplicates():
     data[0][0][1][1][2] = float("nan")
     with pytest.raises(InvalidData):
         parse_response(b")]}'\n" + json.dumps(data).encode())
+
+
+def test_optional_name_fallback_and_normalization():
+    from google_maps_collector.google_maps import display_name
+    assert display_name("  Synthetic\x00 Name ") == "Synthetic Name"
+    assert len(display_name("x" * 1000)) == 128
+    data = json.loads(BODY[5:])
+    data[0][0][6] = ["synthetic-person"]
+    people = parse_response(b")]}'\n" + json.dumps(data).encode())
+    assert people[0].display_name == ""
+
+
+def test_all_shared_fields_match_pinned_upstream():
+    # Load the unchanged standalone upstream parser, without importing HA.
+    import importlib.util
+    import sys
+    path = Path(__file__).resolve().parents[2] / "custom_components/google_maps/gm_loc_sharing.py"
+    spec = importlib.util.spec_from_file_location("upstream_gm_reference", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    upstream = module.GMPerson.shared_from_data(json.loads(BODY[5:])[0][0])
+    person = parse_response(BODY)[0]
+    for our, original in {"id": "id", "latitude": "latitude", "longitude": "longitude",
+        "gps_accuracy": "gps_accuracy", "source_timestamp": "last_seen", "battery": "battery_level",
+        "display_name": "full_name", "nickname": "nickname", "picture_url": "picture_url",
+        "address": "address", "country_code": "country_code", "battery_charging": "battery_charging"}.items():
+        assert getattr(person, our) == getattr(upstream, original)
+
+
+def test_account_holder_location_without_account_email():
+    data = json.loads(BODY[5:])
+    data.extend([None, None, data[0][0]])
+    people = parse_response(b")]}'\n" + json.dumps(data).encode())
+    assert len(people) == 2
+    account = people[1]
+    assert account.id == "google-maps-account" and account.display_name == "Account holder"
+    assert account.latitude == people[0].latitude and account.address == "SYNTHETIC_ADDRESS"
+    assert account.battery is None and account.battery_charging is None
+    assert account.picture_url is None
+    data[0] = None
+    assert len(parse_response(b")]}'\n" + json.dumps(data).encode())) == 1
+
+
+@pytest.mark.parametrize("url", ["http://lh3.googleusercontent.com/p", "https://example.invalid/p",
+    "https://secret@lh3.googleusercontent.com/p", "https://google.com.evil.test/p", "https://google.com:bad/p"])
+def test_picture_urls_cannot_expose_credentials_or_arbitrary_origins(url):
+    from google_maps_collector.google_maps import picture_url
+    assert picture_url(url) is None

@@ -43,7 +43,7 @@ Suggested commit: feat: manage polling and session recovery.
 ### Task 2.3: Add MQTT discovery and state publishing
 Depends on: 2.2.
 Files: collector/src/google_maps_collector/mqtt.py, collector/tests/test_mqtt.py.
-Changes: implement the specified topic contract, stable opaque IDs, hidden-but-enabled GPS trackers, separate battery sensors, last will, freshness availability, retained discovery and reconnect/HA-birth republishing. Bind output to explicit field schemas; never publish Google cookies/raw responses.
+Changes: implement the specified topic contract, stable opaque IDs, visible and enabled GPS trackers, separate battery sensors, last will, freshness availability, retained discovery and reconnect/HA-birth republishing. Bind output to explicit field schemas; never publish Google cookies/raw responses.
 Tests: uv run pytest -q tests/test_mqtt.py; assert exact discovery payloads, duplicate prevention, timestamp preservation, battery-only changes and canary redaction.
 Completion: deterministic discovery/state works with an intercepted publisher; no write-command subscription exists.
 Suggested commit: feat: publish Home Assistant MQTT trackers.
@@ -110,3 +110,7 @@ AC12 -> 1.1, 3.1, 3.2, 4.1.
 ## Verification
 
 The commands above are task requirements. The collector suite now exists; consult tracker.md for fresh observed results and pending container/host checks. Do not infer a pass from the existence of test code or CI configuration.
+
+## Owner-requested upstream data parity correction
+
+Preserve all pinned upstream person fields in the collector, encrypted store and private MQTT output. Use Google names in discovery, visible trackers, independent current metadata and battery sensors, and optional account-holder location. Test parser fields against the unchanged upstream parser, old-store migration, stable identity, no GPS publication for metadata-only updates, canary privacy and ARM64 recovery. Build a pinned image and update only the already-authorized separate collector; preserve broker and all original services/permissions. Existing HA hidden settings need a one-time manual Visible toggle, not deletion/recreation.

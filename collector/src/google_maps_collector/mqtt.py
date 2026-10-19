@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from datetime import datetime, UTC
 from threading import Event
 import paho.mqtt.client as paho
 
@@ -25,6 +26,8 @@ class Publisher:
         self.batteries = {}
         self.availability = {}
         self.discovered = set()
+        self.names = {}
+        self.details = {}
         self.session = None
 
     def send(self, topic, payload):
@@ -42,25 +45,39 @@ class Publisher:
             base = f"{PREFIX}/{key}"
             available = "online" if person.id in snapshot["available"] else "offline"
             availability = [{"topic": GLOBAL}, {"topic": f"{base}/availability"}]
+            device_name = f"Google Maps {person.display_name}" if person.display_name else f"Maps {key[:8]}"
             common = {"availability": availability, "availability_mode": "all",
                 "enabled_by_default": True, "device": {"identifiers": [f"{PREFIX}_{key}"],
-                "name": f"Maps {key[:8]}"}}
-            if key not in self.discovered or force:
+                "name": device_name}}
+            if key not in self.discovered or self.names.get(key) != device_name or force:
                 self.send(f"homeassistant/device_tracker/{PREFIX}/{key}/config", {
                     **common, "name": "Maps location", "unique_id": f"{PREFIX}_{key}",
-                    "source_type": "gps", "visible_by_default": False,
+                    "source_type": "gps", "visible_by_default": True,
                     "json_attributes_topic": f"{base}/location"})
                 self.send(f"homeassistant/sensor/{PREFIX}/{key}-battery/config", {
                     **common, "name": "Maps battery", "unique_id": f"{PREFIX}_{key}_battery",
                     "state_topic": f"{base}/battery", "device_class": "battery",
                     "unit_of_measurement": "%", "state_class": "measurement"})
+                self.send(f"homeassistant/sensor/{PREFIX}/{key}-details/config", {
+                    **common, "name": "Maps details", "unique_id": f"{PREFIX}_{key}_details",
+                    "state_topic": f"{base}/details", "value_template": "{{ value_json.last_seen }}",
+                    "device_class": "timestamp", "json_attributes_topic": f"{base}/details"})
                 self.discovered.add(key)
+                self.names[key] = device_name
             if self.availability.get(key) != available or force:
                 # Publish unavailability before replaying any location on resync.
                 if available == "offline":
                     self.send(f"{base}/availability", available)
+            details = {"full_name": person.display_name, "nickname": person.nickname,
+                "entity_picture": person.picture_url, "address": person.address,
+                "country_code": person.country_code, "battery_level": person.battery,
+                "battery_charging": person.battery_charging,
+                "last_seen": datetime.fromtimestamp(person.source_timestamp, UTC).isoformat()}
+            if self.details.get(key) != details or force:
+                self.send(f"{base}/details", details)
+                self.details[key] = details
             if (self.locations.get(key, -1) < person.source_timestamp or force) and available == "online":
-                self.send(f"{base}/location", {"latitude": person.latitude,
+                self.send(f"{base}/location", {**details, "latitude": person.latitude,
                     "longitude": person.longitude, "gps_accuracy": person.gps_accuracy,
                     "source_timestamp": person.source_timestamp})
                 self.locations[key] = person.source_timestamp

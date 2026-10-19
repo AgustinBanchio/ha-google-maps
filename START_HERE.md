@@ -13,7 +13,7 @@ Read these in order:
 7. [Operations access](docs/OPERATIONS.md).
 8. [Collector setup](docs/SETUP.md) and [recovery](docs/RECOVERY.md).
 
-Use tracker.md for exact current evidence and next action. No real Google credentials have been supplied. The local Windows Docker engine was unavailable, so disposable ARM64 container tests ran on the Pi. See tracker.md for fresh results and docs/NEXT_STEPS.md for owner cookie import and HA MQTT setup.
+Use tracker.md for exact current evidence and next action. The owner has privately imported the Google session and configured HA MQTT. The local Windows Docker engine was unavailable, so disposable ARM64 container tests ran on the Pi. See tracker.md for fresh results and docs/NEXT_STEPS.md for owner cookie import and HA MQTT setup.
 
 The existing upstream README describes the original integration. Collector source and tests live in collector/, packaging in deploy/. The owner's local checkout is D:/repos/ha-google-maps. Ignored .local/ contains private operational context and isolated development tooling; a fresh clone does not include it.
 
