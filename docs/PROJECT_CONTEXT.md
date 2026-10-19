@@ -33,6 +33,6 @@ A stronger host boundary or reducing HA privileges may be assessed later. Do not
 
 ## Status and scope
 
-Local collector implementation has begun on the owner's continue instruction. See tracker.md for completed tasks and exact verification. The original custom_components/google_maps runtime is unchanged. No real Google credentials, release image or Pi deployment have been created. Docker container/ARM64 evidence and host acceptance remain outstanding.
+The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. No real Google session has been supplied; owner import and HA MQTT/People setup are next. See tracker.md for exact evidence and residual acceptance checks.
 
-The implementation instruction does not authorize remote deployment or changes to unrelated services.
+The owner requests direct pushes in the personal repository without PRs. Deployment authorization covers only this new project; existing stack/service changes and full Pi reboot still require separate explicit approval.

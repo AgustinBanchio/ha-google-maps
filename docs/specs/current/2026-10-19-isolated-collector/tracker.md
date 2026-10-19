@@ -1,13 +1,13 @@
 # Tracker: isolated Google Maps collector
 
 Plan: [plan.md](plan.md). Updated: 2026-10-19.
-Status: BLOCKED at Task 4.2 awaiting explicit persistent-deployment approval. Nine of ten tasks complete for implementation and automated acceptance; owner session/HA setup remains.
+Status: READY_FOR_OWNER_SETUP. The isolated production collector/broker is deployed and verified; real Google import and HA MQTT/People setup remain owner actions. Nine implementation tasks are DONE; Task 4.2 retains only live owner acceptance and the separately unauthorized reboot check.
 
 ## Exact next action
 
-Obtain explicit permission to start the two persistent services in the separate google-maps-collector Compose project and provision their new credentials. Automatic approval review rejected that action because it interpreted the owner's wording as preparation, not explicit production mutation. See docs/DEPLOYMENT_REVIEW.md for the concrete image, paths, ports, checks and rollback. Do not retry the rejected action indirectly.
+Follow docs/NEXT_STEPS.md: open the desktop SSH tunnel, read the owner-only local credentials file, import the Google session in the authenticated loopback UI, then add HA's standard MQTT integration and link trackers to People. Do not upload credentials in chat or configure the original cookie-based HA custom integration for this collector.
 
-After approval, recheck free ports and unchanged original three-container baseline, provision only the new private directory, start/recreate only the new project, and prepare the private owner handoff. The owner imports Google cookies through SSH/local UI and adds HA's MQTT integration. No existing stack/permission/service changes or reboot are authorized.
+After owner setup, verify real polling, discovery and Person behavior. A full Pi reboot remains a separate explicit authorization; no reboot or existing stack restart is necessary to add MQTT. All persistent deployment approval requirements were satisfied by the owner's explicit collector/broker-only approval.
 
 ## Tasks
 
@@ -22,7 +22,7 @@ After approval, recheck free ports and unchanged original three-container baseli
 | 3.1 Container broker and bootstrap | 3 | DONE | 2026-10-19 |
 | 3.2 Setup recovery and Person docs | 3 | DONE | 2026-10-19 |
 | 4.1 Privacy and restart suite | 4 | DONE | 2026-10-19 |
-| 4.2 Authorized Pi acceptance | 4 | BLOCKED | 2026-10-19 |
+| 4.2 Authorized Pi acceptance | 4 | IN_PROGRESS | 2026-10-19 |
 
 Status values: PENDING, IN_PROGRESS, DONE, FAILED, BLOCKED. DONE for packaging/docs records preparation checks, not executed container/host acceptance.
 
@@ -40,11 +40,20 @@ Status values: PENDING, IN_PROGRESS, DONE, FAILED, BLOCKED. DONE for packaging/d
 - Selected metadata of all three original containers is identical before/after ARM64 testing: IDs, start times, restart counts, status, privileges and network/Compose service metadata. No existing service was restarted or reconfigured. Disposable test containers were removed.
 - Upstream runtime remains identical to b2132123d46c47e5761d5d91cc08ca6b712fe6c1. The upstream remote remains intact. Private files/artifacts/tooling remain ignored.
 
-## Current blocker
+## Production deployment evidence
 
-Automatic approval review rejected starting persistent collector/broker services and creating/delivering their credentials. It requires clearer explicit deployment authorization; the rejection was not bypassed. Production was not deployed, owner credentials were not provisioned, no Google session was imported and no Pi reboot occurred. An unused ephemeral owner-recipient key was generated only in an owner-only local directory for the approved encrypted handoff design.
+Explicit owner approval superseded the earlier automatic-review block. Production started successfully with the reviewed immutable ARM64 image; the new collector and Mosquitto broker are the only added services. One-time new credentials were encrypted for transfer; the admin password is not persisted in plaintext on the Pi. The owner-only workstation handoff is .local/owner-handoff/SETUP-PRIVATE.txt; its contents never entered chat, Git, SSH InputText/arguments or tool output. The ephemeral recipient private key was removed after decryption.
 
-Task 4.1 is DONE [9/10 tasks complete]; Task 4.2 remains BLOCKED on this exact approval and then owner-controlled Google/HA setup. The earlier missing Windows Docker engine is no longer the test blocker: disposable ARM64 testing ran on the Pi under the owner's continuation instruction.
+Fresh post-deployment checks passed:
+
+- Collector healthcheck and unauthenticated status rejection (HTTP 401).
+- Exact loopback host bindings for ports 8787 and 1883; users 10001:10001 / 1883:1883; read-only roots; dropped capabilities; no privileged/host network/Docker socket/HA config mount.
+- Targeted recreation of only the new collector/broker preserved the provisioned key.
+- Actual HA-subscriber MQTT authentication, retained session discovery, OFF/credential-required state and denied unrelated writes.
+- Original three-container baseline remained identical: container IDs, start times, restart counts, running status, privilege/network/project/service metadata. Existing Compose files, HA/Matter/OTBR permissions and services were untouched.
+- No Google session imported, no HA configuration changed, no reboot performed. Live location/session/Person acceptance is still pending owner input.
+
+Task 4.2 remains IN_PROGRESS only for owner-controlled real-session/HA acceptance and any separately authorized reboot. The requested ready-to-add-to-HA milestone is reached. Owner requests direct pushes with no PR workflow; PR #1 was closed, and the verified work and handoff are being pushed directly to main.
 
 ## Preparation and implementation notes
 
@@ -52,9 +61,9 @@ Preparation reviewed all nine upstream modules, inspected selected Pi metadata r
 
 The Windows sandbox runner timed out on its pipe; auto-reviewed execution outside it worked. Development tooling, synthetic bootstrap files, build products and operational context remain ignored. No real credentials, contact/location data, raw host reports or infrastructure configuration were added to public files.
 
-## Deployment preconditions
+## Remaining live acceptance
 
-No Pi checkout, deployment, restart, reboot, real session import or HA configuration change occurred. Cloudflare routes/Access authentication and router forwarding remain unverified. Verify actual ports/mounts, preserve the original smart-home stack and obtain specific deployment authorization before Task 4.2. Full Pi reboot requires separate explicit authorization. The trusted-host limitation remains accepted.
+A separate Pi source checkout and the approved collector/broker project now exist. Relevant Cloudflare/Access policies and router forwarding were not independently established; no tunnel service/routes were modified and both new ports are loopback-only. Confirm relevant private-access policies before importing a real Google session. The trusted-host limitation remains accepted. Any full Pi reboot or existing smart-home service changes require separate explicit authorization.
 
 ## Verification record
 
@@ -63,3 +72,5 @@ See [verification.md](verification.md) for partial acceptance mapping. Preparati
 Follow-up status check, 2026-10-19: HEAD and remote main both remain at preparation commit 28b206b; implementation changes are uncommitted and unpushed. A fresh read-only desktop-helper SSH probe succeeded and returned ARM64 (aarch64) and Docker server 29.9.1. SSH access is working. This does not authorize starting test containers or deploying on the Pi; no remote service was changed. The Task 4.1 blocker is local Linux Docker availability/test completion, not SSH authentication.
 
 Owner continuation 2026-10-19: authorized commit/push and continuation until ready for HA setup, including isolated new collector tests/deployment on the Pi. Existing Docker Compose, HA/Matter/OTBR permissions and services must remain unchanged. No reboot authorized. Exact next action: save/push a feature branch, run disposable ARM64 broker tests, finish restart/recreation evidence, then provision only the separate collector project. Real Google session import remains an owner action through the private UI.
+
+Explicit owner approval received: deploy/start only the separate collector and MQTT broker, including new private credentials and loopback ports 8787/1883. Existing HA/Matter/OTBR Compose, permissions and services remain unchanged; no reboot. Owner also requests direct pushes in this personal repository, with no PR workflow; PR #1 is being closed. Exact next action: execute the reviewed provision/start and selected post-deployment checks.

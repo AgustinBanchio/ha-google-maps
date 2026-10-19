@@ -1,6 +1,6 @@
 # Verification: isolated collector
 
-19 October 2026. Verdict: PARTIAL for end-to-end feature acceptance; automated implementation/release verification PASS. Persistent deployment awaits explicit approval after automatic review rejected it. Google import and HA setup remain owner actions.
+19 October 2026. Verdict: PARTIAL for end-to-end feature acceptance; automated implementation/release verification PASS. Persistent deployment is approved, running and verified. Google import and HA setup remain owner actions.
 
 | Criterion | Evidence | Verdict |
 |---|---|---|
@@ -13,7 +13,7 @@
 | AC7 MQTT and People | real Mosquitto discovery/ACL/reconnect tests; production-image broker restart and recreation preserve identity | PARTIAL: actual HA discovery/Person linkage remains |
 | AC8 Source freshness | same/older/battery-only unit checks; source timestamp after actual recreation; live broker stale availability check | PASS for collector; HA selection during retained replay remains an operational limit |
 | AC9 Restart and reboot | interrupted writes, new interpreter, actual broker restart and both-container recreation pass | PARTIAL: full Pi reboot deliberately not authorized/executed |
-| AC10 Compose/ACL isolation | actual ARM64 UID/mount startup, real ACL denial tests, separate test project; existing three-container metadata unchanged | PASS for tested image/config; persistent deployment pending |
+| AC10 Compose/ACL isolation | actual ARM64 UID/mount startup, real ACL denial tests, separate test project; existing three-container metadata unchanged | PASS for tested image/config; persistent deployment passed |
 | AC11 Canary privacy | native privacy/store/UI/MQTT/wheel checks; production-image container log canary scan | PASS for synthetic automated scope |
 | AC12 Reproducibility | hash-locked distributions, pinned bases, clean source ce2f19e, immutable locally built image and wheel hash; full release validator passed | PASS; no registry image publication or automatic upstream update |
 
@@ -21,6 +21,6 @@ Fresh commands/results: Windows pytest 74 passed / 2 broker skips; Pi ARM64 Comp
 
 Release source: ce2f19ecf99c2dc90d54a8a54e2a3ce30b27bc01. Built ARM64 image identity: sha256:e543a5ea5d8fe2597468d546d8fb01a24bc7f2b548349a8c41fb60d67084abd3. This local Docker content identity is not a registry RepoDigest. The release record retains lock/wheel hashes and the selected image metadata.
 
-Fresh scope audit: no existing Compose/privilege/network/service changes; all three original container IDs/start times/restart counts/status and selected configuration fields unchanged. New private credential provisioning and persistent project start were blocked by automatic approval review, not executed. No real credential or owner location appears in public files. No reboot or HA auth/log/config inspection occurred.
+Fresh scope audit: no existing Compose/privilege/network/service changes; all three original container IDs/start times/restart counts/status and selected configuration fields unchanged. After explicit approval, private provisioning and production start/recreation passed. Both new ports are loopback-only; actual broker subscriber authentication, retained discovery and denied unrelated writes passed. The original three-container baseline remained identical. No real credential or owner location appears in public files. No reboot or HA auth/log/config inspection occurred.
 
-Remaining work after approval: provision/start/recreate only the new project; verify loopback bindings and original baseline again; let the owner import the Google session and configure HA MQTT/People. Full Pi reboot remains a separate optional authorization. Trusted-host and undocumented Google API limits remain; HA's own GPS-source update rules are not overridden.
+Remaining work: owner imports the Google session and configures HA MQTT/People; then record actual live polling/discovery/Person evidence. Full Pi reboot remains a separate optional authorization. Trusted-host and undocumented Google API limits remain; HA's own GPS-source update rules are not overridden.

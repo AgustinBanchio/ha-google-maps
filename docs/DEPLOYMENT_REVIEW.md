@@ -1,6 +1,6 @@
 # Collector deployment proposal
 
-Prepared 19 October 2026. Code and tests are ready; persistent deployment is awaiting explicit approval after automatic approval review rejected the broader wording. No persistent collector/broker has been started and no real Google credentials have been supplied.
+Deployed 19 October 2026 after the owner explicitly approved only this separate project and its private credentials. The earlier automatic-review block is resolved. No real Google session has been supplied; HA setup remains an owner action.
 
 ## Exact proposed addition
 
@@ -19,9 +19,9 @@ The Pi's disposable ARM64 broker suite passed 76 tests. The production image rec
 
 Release validation passed with the source revision, image identity, lock hash and wheel hash retained in the private release record. GitHub HACS, hassfest, Linux/Windows unit and broker checks passed. All three pre-existing containers retained identical IDs, start times, restart counts, status, privilege and network/project metadata before/after testing. No HA/Matter/OTBR permission or Compose change occurred.
 
-## Checks after approval
+## Completed deployment checks
 
-Recheck the three-container baseline and new ports; provision only the new private directory; start only this project; verify collector health, effective user/mounts, loopback listeners and MQTT authentication. Recreate only the new project to check empty-session/key persistence and confirm the original three-container baseline still matches.
+The original three-container baseline and free ports were checked before provisioning. Only this project was started and recreated. Collector health, unauthenticated HTTP 401, effective user/read-only mounts/capabilities, loopback listeners, MQTT subscriber authentication/retained discovery and unrelated-write denial all passed. The new key survived recreation; the original three-container baseline still matches exactly. No reboot occurred. Owner credentials were delivered encrypted into an owner-only ignored workstation file, and the ephemeral private key was removed.
 
 Owner action then remains: use the SSH management tunnel, upload the Google session privately, add HA's standard MQTT integration with the separate subscriber credentials, and manually attach discovered trackers to People. Live Google compatibility, actual HA Person behavior and tunnel/Access exposure policy confirmation remain owner-dependent. No custom Google integration containing cookies is required in HA.
 
