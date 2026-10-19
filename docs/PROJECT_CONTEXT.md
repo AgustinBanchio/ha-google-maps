@@ -16,15 +16,15 @@ Retrieve locations already shared with the owner's personal Google Maps account 
 - Keep Google credentials out of HA configuration, entity data, MQTT, logs, repository files and routine HA backups.
 - Future upstream updates are audited on request before merging into the fork. No automatic merge/deploy.
 - Carry all project knowledge in the repository because the originating conversation will not be reused.
-- Local checkout: D:/repos/ha-google-maps. The owner will import it into T3. A Pi source checkout is optional and has not been created.
+- Local checkout: D:/repos/ha-google-maps. The owner will import it into T3. A separate Pi collector source checkout now exists; private operational paths are not published.
 
 ## Corrected direction and current implementation
 
-The owner clarified that the original HA integration must remain the implementation of person/location reporting and tracking behaviour, with Google credential/session handling externalized through a small source/transport adapter. Future upstream updates should apply to that original code with a limited, documented authentication patch. See [course correction](COURSE_CORRECTION.md) for the proposed boundary, reuse, verification and migration.
+The original HA integration implements person/location reporting and tracking behaviour. Google credential/session handling is externalized through a narrow source adapter. Five protected upstream files and the external service's vendored Maps client match the audited baseline; the documented patch boundary identifies each changed integration file.
 
-The currently running collector/MQTT implementation is a different architecture. It duplicates the parser/tracking policy and replaces HA's original entities; selected parity tests do not establish complete equivalence. Keep it running while the source-preserving correction is prepared. All original custom_components/google_maps files remain identical to the pinned upstream baseline, so they can be used directly as the foundation.
+The scoped loopback API returns original upstream observations before HA filtering. HA stores only its separate location-data access key and account identity. The external encrypted store/import UI and operations tooling remain responsible for Google cookies. The native component and tested ARM64 service are deployed; supported HA setup and migration checks are tracked separately.
 
-The external encrypted store/import UI and operations tooling may be reused after review. A native data API/client does not exist yet. Do not infer approval to install/restart HA or remove the production broker from the discussion of a proposed architecture.
+MQTT publishing remains temporarily available for the existing installation. Its platform identities do not transfer automatically to native Google Maps entities. Verify People/automation references before retiring it. See [course correction](COURSE_CORRECTION.md), [native setup](NATIVE_SETUP.md) and the active tracker.
 
 ## Security judgement
 
@@ -36,6 +36,6 @@ A stronger host boundary or reducing HA privileges may be assessed later. Do not
 
 ## Status and scope
 
-The isolated collector and broker are implemented, tested on ARM64 and deployed after explicit owner approval. The upstream runtime and existing smart-home Compose/permissions/services remain unchanged. The owner has imported a real Google session and added HA MQTT. Current work is the source-preserving course correction described above; the new transport/API remains proposed. See tracker.md for exact evidence and residual acceptance checks.
+The scoped collector API and native custom component are implemented, tested and installed. The owner explicitly approved one targeted HA restart for this installation. HA's persistent `/config` mount retains the component across normal HA Compose pull/recreation; no existing Compose file or permissions were changed. The separate collector and broker retain `unless-stopped` recovery and private persistent storage.
 
-The owner requests direct pushes in the personal repository without PRs. Deployment authorization covers only this new project; existing stack/service changes and full Pi reboot still require separate explicit approval.
+The owner requests direct pushes to this personal fork without PRs. The installed HA version tested is 2026.10.1; future upstream or HA updates require compatibility checks. Broker retirement, unrelated service changes and Pi reboot are not authorized by the component installation approval.

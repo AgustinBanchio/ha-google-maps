@@ -43,4 +43,4 @@ jobs:
           python tools/check_upstream.py
           python tools/test_upstream_rebase.py
       - name: Original HA entities and external source contract
-        run: docker run --rm --network none --entrypoint python --workdir /repo -e HA_NATIVE_SOURCE=/repo -v "$PWD:/repo:ro" ghcr.io/home-assistant/home-assistant:2026.10.1 /repo/tests/native/run_tests.py
+        run: docker run --rm --network none --entrypoint python --workdir /repo -e HA_NATIVE_SOURCE=/repo -v "$PWD:/repo:ro" ghcr.io/home-assistant/home-assistant:2026.10.1@sha256:130241f28d01fa80dfa3b44f7d89781c188d8642ecab9024f079f19f9f82baa0 /repo/tests/native/run_tests.py
