@@ -19,7 +19,7 @@ from unittest.mock import patch
 ROOT = Path(os.environ["HA_NATIVE_SOURCE"]) if "HA_NATIVE_SOURCE" in os.environ else Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry, ConfigEntries
+from homeassistant.config_entries import ConfigEntry, ConfigEntries, ConfigEntryDisabler
 from homeassistant.setup import async_setup_component
 from homeassistant import loader
 from homeassistant.helpers import entity_registry as er, device_registry as dr, issue_registry as ir, area_registry as ar
@@ -236,7 +236,8 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         legacy.write_text("SYNTHETIC_LEGACY_COOKIE_CANARY")
         entry=ConfigEntry(version=3,minor_version=1,domain="google_maps",title=ACCOUNT,
             data={"cookies_file":str(legacy)},options={CONF_CREATE_ACCT_ENTITY:True,CONF_MAX_GPS_ACCURACY:1000,"scan_interval":60},
-            source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[])
+            source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[],disabled_by=ConfigEntryDisabler.USER)
+        await self.hass.config_entries.async_add(entry)
         self.assertTrue(await async_migrate_entry(self.hass,entry))
         self.assertEqual(entry.version,4)
         self.assertEqual(entry.unique_id,ACCOUNT)
