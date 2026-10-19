@@ -13,3 +13,5 @@ On Windows, a background T3 Connect process may not use the desktop 1Password ag
 Preserve the audited upstream baseline b2132123d46c47e5761d5d91cc08ca6b712fe6c1 and the upstream remote. Keep changes to the embedded Maps client small and attributable. Follow docs/UPSTREAM_UPDATES.md before incorporating upstream changes. No automatic upstream merges or unattended collector deployment.
 
 The owner's authorization covers preparing this fork and its plan. Begin substantial collector implementation when the owner asks to implement/continue the plan. Remote deployment is a separate action; prepare a concrete diff, tests and rollback before requesting any needed deployment approval.
+
+For this personal fork, commit and push directly to the owner repository; do not open pull requests unless explicitly requested. Preserve the audited upstream remote and baseline.

@@ -49,11 +49,11 @@ Fresh post-deployment checks passed:
 - Collector healthcheck and unauthenticated status rejection (HTTP 401).
 - Exact loopback host bindings for ports 8787 and 1883; users 10001:10001 / 1883:1883; read-only roots; dropped capabilities; no privileged/host network/Docker socket/HA config mount.
 - Targeted recreation of only the new collector/broker preserved the provisioned key.
-- Actual HA-subscriber MQTT authentication, retained session discovery, OFF/credential-required state and denied unrelated writes.
+- Actual HA-subscriber MQTT authentication, retained session discovery, OFF/credential-required state and denied unrelated writes. A final probe also passed HA's homeassistant/# discovery subscription and homeassistant/status birth publish.
 - Original three-container baseline remained identical: container IDs, start times, restart counts, running status, privilege/network/project/service metadata. Existing Compose files, HA/Matter/OTBR permissions and services were untouched.
 - No Google session imported, no HA configuration changed, no reboot performed. Live location/session/Person acceptance is still pending owner input.
 
-Task 4.2 remains IN_PROGRESS only for owner-controlled real-session/HA acceptance and any separately authorized reboot. The requested ready-to-add-to-HA milestone is reached. Owner requests direct pushes with no PR workflow; PR #1 was closed, and the verified work and handoff are being pushed directly to main.
+Task 4.2 remains IN_PROGRESS only for owner-controlled real-session/HA acceptance and any separately authorized reboot. The requested ready-to-add-to-HA milestone is reached. Owner requests direct pushes with no PR workflow; PR #1 was closed, and the verified work and handoff are committed and pushed directly to main.
 
 ## Preparation and implementation notes
 
