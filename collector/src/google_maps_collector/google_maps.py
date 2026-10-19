@@ -145,96 +145,46 @@ def picture_url(value) -> str | None:
     return None
 
 
+def _legacy_people(observations, include_account=True):
+    records = list(observations.people)
+    if include_account and observations.account:
+        records.append(observations.account)
+    return [Person("google-maps-account" if p.id == "__collector_account__" else p.id,
+        p.latitude, p.longitude, p.gps_accuracy, p.last_seen, p.battery_level,
+        "Account holder" if p.id == "__collector_account__" else display_name(p.full_name),
+        display_name(p.nickname), picture_url(p.picture_url), display_name(p.address),
+        display_name(p.country_code), p.battery_charging) for p in records]
+
+
 def parse_response(body: bytes, include_account=True) -> list[Person]:
-    try:
-        if not body.startswith(b")]}'\n"):
-            raise InvalidData()
-        data = json.loads(body[5:])
-        if not isinstance(data, list) or len(data) < 7:
-            raise InvalidData()
-        if data[6] == "GgA=":
-            raise InvalidSession()
-        if data[0] is None:
-            data[0] = []
-        if not isinstance(data[0], list):
-            raise InvalidData()
-        people = []
-        seen = set()
-        entries = [(entry, False) for entry in data[0]]
-        # Upstream's optional account-holder location has no profile metadata.
-        # A local stable ID avoids requiring or publishing the account email.
-        if include_account and len(data) > 9 and data[9] is not None:
-            entries.append((data[9], True))
-        for entry, account in entries:
-            # Upstream shared_from_data/acct_from_data indices.
-            if not isinstance(entry, list) or len(entry) < (2 if account else 7):
-                raise InvalidData()
-            if entry[1] is None:  # A shared contact with no fix is not a parser failure.
-                continue
-            profile = ["google-maps-account", None, "Account holder", "Account holder"] if account else entry[6]
-            identity = profile[0]
-            if not isinstance(identity, str) or not identity or len(identity) > 512 or identity in seen:
-                raise InvalidData()
-            seen.add(identity)
-            battery = None
-            if not account and len(entry) > 13 and isinstance(entry[13], list) and len(entry[13]) > 1:
-                battery = entry[13][1]
-                if type(battery) is not int or not 0 <= battery <= 100:
-                    battery = None
-            people.append(Person(
-                identity, _number(entry[1][1][2], -90, 90),
-                _number(entry[1][1][1], -180, 180),
-                _number(entry[1][3], 0, 1_000_000),
-                _number(entry[1][2], 0, 100_000_000_000_000) / 1000, battery,
-                display_name(profile[2]) if len(profile) > 2 else "",
-                display_name(profile[3]) if len(profile) > 3 else "",
-                picture_url(profile[1]) if len(profile) > 1 else None,
-                display_name(entry[1][4]) if len(entry[1]) > 4 else "",
-                display_name(entry[1][6]) if len(entry[1]) > 6 else "",
-                bool(entry[13][0]) if not account and len(entry) > 13
-                    and isinstance(entry[13], list) and entry[13] else None,
-            ))
-        return people
-    except (ValueError, TypeError, IndexError, KeyError, RecursionError):
-        raise InvalidData() from None
+    # Tests/legacy adapter use the upstream client through an in-memory transport.
+    from .upstream import UpstreamSource
+    class Response:
+        status_code = 200
+        def iter_content(self, size): yield body
+        def close(self): pass
+    class MemorySession:
+        cookies = CookieJar()
+        def get(self, *args, **kwargs): return Response()
+        def close(self): pass
+    source = UpstreamSource(MemorySession())
+    observations, _ = source.poll(CookieJar())
+    return _legacy_people(observations, include_account)
 
 
 class GoogleMaps:
     def __init__(self, session=None, *, include_account=True):
+        from .upstream import UpstreamSource
         self.include_account = include_account
-        self.session = session if session is not None else requests.Session()
-        self.session.trust_env = False  # Ignore proxy, netrc and CA environment overrides.
+        self.source = UpstreamSource(session)
+        self.session = self.source.session
 
     def close(self):
-        self.session.close()
+        self.source.close()
 
-    def poll(self, cookies: CookieJar) -> tuple[list[Person], CookieJar]:
-        # This URL is fixed and independently checked; no caller-supplied endpoint.
-        parsed = urlsplit(URL)
-        if (parsed.scheme, parsed.netloc, parsed.path) != (
-            "https", "www.google.com", "/maps/rpc/locationsharing/read"
-        ) or parsed.query or parsed.fragment:
-            raise NetworkFailure()
-        self.session.cookies = filter_cookies(cookies)
-        response = None
-        try:
-            response = self.session.get(URL, params=PARAMS, timeout=(10, 60),
-                                        verify=True, allow_redirects=False, stream=True)
-            if 300 <= response.status_code < 400:
-                raise UnexpectedRedirect()
-            if response.status_code in {401, 403}:
-                raise InvalidSession()
-            if response.status_code != 200:
-                raise NetworkFailure()
-            body = bytearray()
-            for chunk in response.iter_content(65536):
-                if len(body) + len(chunk) > MAX_RESPONSE_BYTES:
-                    raise InvalidData()
-                body.extend(chunk)
-            people = parse_response(bytes(body), self.include_account)
-            return people, filter_cookies(self.session.cookies)
-        except requests.RequestException:
-            raise NetworkFailure() from None
-        finally:
-            if response is not None:
-                response.close()
+    def poll_upstream(self, cookies):
+        return self.source.poll(cookies)
+
+    def poll(self, cookies):
+        observations, rotated = self.poll_upstream(cookies)
+        return _legacy_people(observations, self.include_account), rotated

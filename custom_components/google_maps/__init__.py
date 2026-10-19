@@ -103,6 +103,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # as a reconfigure flow.
         data[CONF_COOKIES_FILE] = options.pop(CONF_COOKIES_FILE)
 
+    if entry.version < 4:
+        data.pop(CONF_COOKIES_FILE, None)
+        options.pop(CONF_COOKIES_FILE, None)
+        # No file is read/deleted. The external source is configured via reauth.
+        data.setdefault("endpoint", "http://127.0.0.1:8787")
+        data.setdefault("data_token", "")
     hass.config_entries.async_update_entry(
         entry,
         data=data,
@@ -135,13 +141,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-def _del_cookies_file(hass: HomeAssistant, cookies_file: str) -> None:
-    """Delete cookies file."""
-    hass.async_add_executor_job(
-        partial(cookies_file_path(hass, cookies_file).unlink, missing_ok=True)
-    )
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: GMConfigEntry) -> bool:
     """Unload a config entry."""
     result = await hass.config_entries.async_unload_platforms(entry, _PLATFORMS)
@@ -172,23 +171,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: GMConfigEntry) -> bool:
             if device := dev_reg.async_get_device(dev_ids(uid)):
                 dev_reg.async_remove_device(device.id)
 
-        if entry.data[CONF_COOKIES_FILE] != (
-            cookies_file := entry.runtime_data.setup_data[CONF_COOKIES_FILE]
-        ):
-            # Cookies file has changed. Delete the old one.
-            _del_cookies_file(hass, cookies_file)
-
     return result
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Remove a config entry."""
-    # CONF_COOKIES_FILE is in data for config versions 1 & 3, but was in options for
-    # version 2. In case an old, disabled config entry is being deleted, try getting it
-    # from both places.
-    if cookies_file := entry.data.get(CONF_COOKIES_FILE) or entry.options.get(
-        CONF_COOKIES_FILE
-    ):
-        _del_cookies_file(hass, cookies_file)
     if not _duplicate_usernames(hass):
         ir.async_delete_issue(hass, DOMAIN, "duplicate_usernames")

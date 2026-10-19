@@ -14,6 +14,7 @@ services:
     mem_limit: 256m
     environment:
       MQTT_HOST: broker
+      MQTT_ENABLED: ${MQTT_ENABLED:-true}
       MANAGEMENT_BIND: 0.0.0.0
       MAX_GPS_ACCURACY: ${MAX_GPS_ACCURACY:-1000}
       INCLUDE_ACCOUNT: ${INCLUDE_ACCOUNT:-true}
@@ -26,7 +27,7 @@ services:
         target: /data
         bind:
           create_host_path: false
-    secrets: [store-key, admin-verifier, mqtt-password]
+    secrets: [store-key, admin-verifier, mqtt-password, data-token]
     depends_on: [broker]
     networks: [collector]
     logging:
@@ -68,3 +69,5 @@ secrets:
     file: ${COLLECTOR_PRIVATE_DIR}/mqtt-password
   broker-passwords:
     file: ${COLLECTOR_PRIVATE_DIR}/broker-passwords
+  data-token:
+    file: ${COLLECTOR_PRIVATE_DIR}/data-token

@@ -1,0 +1,5 @@
+# Overlay after native HA acceptance: no MQTT dependency in the session service.
+services:
+  collector:
+    environment:
+      MQTT_ENABLED: "false"

@@ -6,7 +6,7 @@ COPY collector/pyproject.toml collector/uv.lock ./
 RUN uv sync --frozen --no-install-project --no-managed-python
 COPY collector/src ./src
 COPY collector/tests ./tests
-COPY custom_components/google_maps/gm_loc_sharing.py /repo/custom_components/google_maps/gm_loc_sharing.py
+COPY custom_components/google_maps /repo/custom_components/google_maps
 COPY tools /repo/tools
 COPY deploy /repo/deploy
 ENV PYTHONPATH=/repo/collector/src

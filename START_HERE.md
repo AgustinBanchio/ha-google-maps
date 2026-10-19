@@ -1,3 +1,7 @@
+# Active implementation
+
+The owner approved implementing the source-preserving correction without another planning gate. Read docs/specs/current/2026-10-19-upstream-session-adapter/spec.md, plan.md and tracker.md first. Continue from its exact next action. docs/COURSE_CORRECTION.md defines the approved direction. Do not claim pending native API/tests exist; record fresh evidence.
+
 # Current direction: course correction
 
 Read [the course-correction proposal](docs/COURSE_CORRECTION.md) first. The owner clarified that the intended solution is the original HA integration with external Google credential/session handling and a small maintainable upstream patch. The running MQTT collector is a reimplementation and is not the intended final architecture. The proposal is ready for review; replacement API/client code and HA migration have not been implemented. Keep the working deployment and existing stack intact during preparation.

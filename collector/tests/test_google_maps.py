@@ -80,6 +80,9 @@ def test_transport_errors_are_sanitized():
 @pytest.mark.parametrize("body", [b"SYNTHETIC_SECRET", b")]}'\n{}", b")]}'\n[]", b")]}'\n[null]",
     b")]}'\n[[[]],null,null,null,null,null,null]", b")]}'\n" + b"x" * 4_194_304], ids=["text", "object", "empty", "short", "bad-contact", "oversized"])
 def test_malformed_body(body):
+    if b"[[[]]" in body:
+        assert client(Adapter(body=body)).poll(parse_cookies(COOKIE))[0] == []
+        return  # Upstream skips incomplete contacts rather than rejecting all data.
     with pytest.raises(InvalidData):
         client(Adapter(body=body)).poll(parse_cookies(COOKIE))
 
@@ -119,7 +122,7 @@ def test_optional_name_fallback_and_normalization():
     data = json.loads(BODY[5:])
     data[0][0][6] = ["synthetic-person"]
     people = parse_response(b")]}'\n" + json.dumps(data).encode())
-    assert people[0].display_name == ""
+    assert people == []  # Original parser skips incomplete contact profiles.
 
 
 def test_all_shared_fields_match_pinned_upstream():

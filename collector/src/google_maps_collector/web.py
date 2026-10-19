@@ -18,7 +18,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 
-from .google_maps import GoogleError, parse_cookies
+from .google_maps import GoogleError, InvalidSession, InvalidData, NetworkFailure, parse_cookies
 from .store import StoreError
 
 SESSION_SECONDS = 3600
@@ -160,6 +160,34 @@ def create_app(service, config, verifier, clock=time.monotonic):
             raise HTTPException(400) from None
         return JSONResponse({"status": "session_saved"})
 
+    async def locations(request):
+        # This bearer grants only the fixed data operation. It is never accepted
+        # by management auth, cookie upload or arbitrary URL/command endpoints.
+        if request.headers.getlist("host") not in (["127.0.0.1:8787"], ["localhost:8787"]):
+            raise HTTPException(400)
+        expected = None
+        try:
+            expected = config.data_token_file.read_text().strip()
+        except OSError:
+            pass
+        supplied = request.headers.getlist("authorization")
+        if (not expected or not 32 <= len(expected) <= 256 or len(supplied) != 1
+                or not hmac.compare_digest(supplied[0].encode(), ("Bearer " + expected).encode())):
+            raise HTTPException(401)
+        if request.query_params or request.method != "GET":
+            raise HTTPException(400)
+        try:
+            document = await run_in_threadpool(service.upstream_observations)
+            return JSONResponse(document)
+        except InvalidSession:
+            return JSONResponse({"error": "google_session_required"}, status_code=409)
+        except InvalidData:
+            return JSONResponse({"error": "invalid_google_data"}, status_code=502)
+        except NetworkFailure:
+            return JSONResponse({"error": "google_unavailable"}, status_code=503)
+        except (StoreError, GoogleError):
+            return JSONResponse({"error": "source_unavailable"}, status_code=503)
+
     async def error(request, exception):
         codes = {400: "invalid_request", 401: "authentication_required", 403: "request_rejected",
                  404: "not_found", 405: "method_not_allowed", 413: "upload_too_large", 429: "try_later"}
@@ -168,7 +196,7 @@ def create_app(service, config, verifier, clock=time.monotonic):
 
     app = Starlette(routes=[Route("/", index), Route("/login", login, methods=["POST"]),
         Route("/session", session), Route("/logout", logout, methods=["POST"]),
-        Route("/status", status), Route("/cookies", upload, methods=["POST"])],
+        Route("/v1/locations", locations), Route("/status", status), Route("/cookies", upload, methods=["POST"])],
         exception_handlers={HTTPException: error, Exception: error})
     return SecurityHeaders(app)
 

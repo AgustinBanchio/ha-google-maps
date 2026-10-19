@@ -13,7 +13,7 @@ import tempfile
 from google_maps_collector.web import password_verifier
 
 
-FILES = ("store-key", "admin-verifier", "mqtt-password", "ha-password", "broker-passwords")
+FILES = ("store-key", "admin-verifier", "mqtt-password", "ha-password", "broker-passwords", "data-token")
 
 
 def broker_hash(password):
@@ -39,7 +39,7 @@ def bootstrap(directory: Path, password: str, *, assign_ownership=True):
         raise ValueError("create the private parent directory first")
     verifier = password_verifier(password)
     mqtt_password, ha_password = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
-    content = {"store-key": secrets.token_bytes(32),
+    content = {"data-token": secrets.token_urlsafe(32).encode(), "store-key": secrets.token_bytes(32),
         "admin-verifier": json.dumps(verifier).encode(),
         "mqtt-password": mqtt_password.encode(), "ha-password": ha_password.encode(),
         "broker-passwords": (f"collector:{broker_hash(mqtt_password)}\n"
@@ -61,7 +61,7 @@ def bootstrap(directory: Path, password: str, *, assign_ownership=True):
             # File-backed Compose secrets preserve host ownership, not secrets.uid.
             if os.geteuid() != 0:
                 raise ValueError("Linux bootstrap requires root for assigned file ownership")
-            for name in ("store-key", "admin-verifier", "mqtt-password", "data"):
+            for name in ("store-key", "admin-verifier", "mqtt-password", "data-token", "data"):
                 os.chown(staging / name, 10001, 10001)
             for name in ("broker-passwords", "broker-data"):
                 os.chown(staging / name, 1883, 1883)

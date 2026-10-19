@@ -108,6 +108,36 @@ class Service:
         self.failures = 0
         self._refresh_view()
 
+    def upstream_observations(self):
+        """One cookie owner; native HA receives upstream records BEFORE HA policy."""
+        from dataclasses import asdict
+        from .upstream import REVISION
+        with self.lock:
+            if not len(self.cookies):
+                raise InvalidSession()
+            try:
+                observations, rotated = self.google.poll_upstream(self.cookies)
+                now = self.clock()
+                # Persist rotation without running the legacy MQTT location policy.
+                self.store.save(self._document(rotated, self.people, self.present, now))
+                self.cookies = rotated
+                self.last_success = now
+                self.status = "ready" if observations.people or observations.account else "no_data"
+                self.session_valid = True
+                self.credential_required = False
+                self.failures = 0
+                self._refresh_view()
+                return {"schema": 1, "upstream_revision": REVISION,
+                    "people": [asdict(person) for person in observations.people],
+                    "account": asdict(observations.account) if observations.account else None,
+                    "cookie_expiration": observations.expiration.isoformat() if observations.expiration else None}
+            except InvalidSession:
+                self.session_valid = False
+                self.credential_required = True
+                self.status = "credential_required"
+                self._refresh_view()
+                raise
+
     def import_cookies(self, candidate):
         with self.lock:
             # Failed validation or persistence leaves the prior active session intact.

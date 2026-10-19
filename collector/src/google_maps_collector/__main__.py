@@ -16,6 +16,9 @@ def environment_config():
     account = os.environ.get("INCLUDE_ACCOUNT", "true").lower()
     if account not in {"true", "false"}:
         raise ValueError("invalid account tracker setting")
+    mqtt_enabled = os.environ.get("MQTT_ENABLED", "true").lower()
+    if mqtt_enabled not in {"true", "false"}:
+        raise ValueError("invalid MQTT setting")
     return Config(
         poll_seconds=int(os.environ.get("POLL_SECONDS", "60")),
         freshness_seconds=int(os.environ.get("FRESHNESS_SECONDS", "0")),
@@ -25,6 +28,8 @@ def environment_config():
         key_file=Path(os.environ.get("KEY_FILE", "/run/secrets/store-key")),
         admin_file=Path(os.environ.get("ADMIN_FILE", "/run/secrets/admin-verifier")),
         mqtt_password_file=Path(os.environ.get("MQTT_PASSWORD_FILE", "/run/secrets/mqtt-password")),
+        data_token_file=Path(os.environ.get("DATA_TOKEN_FILE", "/run/secrets/data-token")),
+        mqtt_enabled=mqtt_enabled == "true",
         mqtt_host=os.environ.get("MQTT_HOST", "broker"),
         mqtt_port=int(os.environ.get("MQTT_PORT", "1883")),
         management_bind=os.environ.get("MANAGEMENT_BIND", "127.0.0.1"),
@@ -53,12 +58,13 @@ async def run(config):
         service = Service(config, store, google)
         verifier = json.loads(config.admin_file.read_text())
         app = create_app(service, config, verifier)
-        mqtt = MQTT(config)
+        mqtt = MQTT(config) if config.mqtt_enabled else None
         server = uvicorn.Server(uvicorn.Config(app,
             host=config.management_bind, port=8787, access_log=False, log_config=None,
             proxy_headers=False, server_header=False, limit_concurrency=32,
             timeout_keep_alive=5))
-        mqtt.start()
+        if mqtt is not None:
+            mqtt.start()
 
         async def polling():
             while True:
@@ -78,8 +84,8 @@ async def run(config):
                 print("collector_worker_unavailable", file=sys.stderr)
                 server.should_exit = True
 
-        tasks = [asyncio.create_task(supervise(polling())),
-                 asyncio.create_task(supervise(publishing()))]
+        tasks = ([asyncio.create_task(supervise(polling())),
+                  asyncio.create_task(supervise(publishing()))] if mqtt is not None else [])
         await server.serve()
     finally:
         for task in tasks:

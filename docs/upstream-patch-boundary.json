@@ -1,0 +1,20 @@
+{
+  "baseline": "b2132123d46c47e5761d5d91cc08ca6b712fe6c1",
+  "protected": {
+    "device_tracker.py": "45b5879ed60e9cb0c8f3812de4d7fce805132eec0a0cbeab6266e6cdf63654b8",
+    "binary_sensor.py": "c6dee580ce10200d095059c3b2f780b464700c5893ee842b2b1e28bfc70382ac",
+    "helpers.py": "cc640cbfced5101df992245340b80603871aa376ce22e4db63ecbb8df3cd0599",
+    "gm_loc_sharing.py": "50b38013604f2a7036c66e46e7d937f9cf3faf229033dc8fa77d45a6a83953a9",
+    "const.py": "96491562377421846092ef9032a851b344a40db87d541cf2fa5dbfec40710199"
+  },
+  "allowed_modified": [
+    "__init__.py",
+    "coordinator.py",
+    "config_flow.py",
+    "manifest.json",
+    "translations/en.json"
+  ],
+  "added": [
+    "collector_client.py"
+  ]
+}

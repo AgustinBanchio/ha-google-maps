@@ -17,3 +17,5 @@
 !custom_components/
 !custom_components/google_maps/
 !custom_components/google_maps/gm_loc_sharing.py
+
+!custom_components/google_maps/**

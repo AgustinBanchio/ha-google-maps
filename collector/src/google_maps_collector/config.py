@@ -15,6 +15,8 @@ class Config:
     key_file: Path = field(default=Path("/run/secrets/store-key"), repr=False)
     admin_file: Path = field(default=Path("/run/secrets/admin-verifier"), repr=False)
     mqtt_password_file: Path = field(default=Path("/run/secrets/mqtt-password"), repr=False)
+    data_token_file: Path = field(default=Path("/run/secrets/data-token"), repr=False)
+    mqtt_enabled: bool = True
     mqtt_host: str = "broker"
     mqtt_port: int = 1883
     mqtt_username: str = "collector"

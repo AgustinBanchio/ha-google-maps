@@ -6,7 +6,10 @@
         },
         "error": {
             "already_configured": "Account is already configured. Please use a different email address.",
-            "invalid_cookies_file": "Invalid cookies file."
+            "invalid_cookies_file": "Invalid cookies file.",
+            "session_required": "Import or renew the Google session in the external collector, or check the separate data access key, then retry.",
+            "cannot_connect": "Cannot read the external collector.",
+            "invalid_source": "Use a loopback collector on port 8787 and its data access key."
         },
         "step": {
             "account_entity": {
@@ -91,6 +94,15 @@
                 },
                 "description": "The email address for the Google account to be used for retrieving shared location.",
                 "title": "Google Maps Account"
+            },
+            "source": {
+                "title": "Connect to the external Google Maps session",
+                "description": "Import Google cookies only in the external collector at http://127.0.0.1:8787. Enter its separate data access key here, never Google cookies. Use your Google account email for the original account identity.",
+                "data": {
+                    "username": "Google account email",
+                    "endpoint": "Collector address",
+                    "data_token": "Collector data access key"
+                }
             }
         }
     },
@@ -125,7 +137,7 @@
             "title": "Duplicate Email Addresses"
         },
         "expiring_soon": {
-            "description": "Cookies for {username} are expiring soon.\n\nTo fix, [click here](/config/integrations/integration/google_maps#config_entry={entry_id}) then click CONFIGURE and upload new cookies.",
+            "description": "Google session for {username} is expiring soon. Renew it in the external collector at http://127.0.0.1:8787, then reload [this integration](/config/integrations/integration/google_maps#config_entry={entry_id}). Do not upload Google cookies to Home Assistant.",
             "title": "Google Maps Cookies Expiring Soon"
         }
     },
