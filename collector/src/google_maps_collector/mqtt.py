@@ -76,11 +76,15 @@ class Publisher:
             if self.details.get(key) != details or force:
                 self.send(f"{base}/details", details)
                 self.details[key] = details
-            if (self.locations.get(key, -1) < person.source_timestamp or force) and available == "online":
-                self.send(f"{base}/location", {**details, "latitude": person.latitude,
-                    "longitude": person.longitude, "gps_accuracy": person.gps_accuracy,
-                    "source_timestamp": person.source_timestamp})
-                self.locations[key] = person.source_timestamp
+            location = {**details, "latitude": person.latitude,
+                "longitude": person.longitude, "gps_accuracy": person.gps_accuracy,
+                "source_timestamp": person.source_timestamp}
+            previous_location = self.locations.get(key)
+            if (previous_location is None or person.source_timestamp >= previous_location["source_timestamp"]) and (
+                    previous_location != location or force):
+                if available == "online":
+                    self.send(f"{base}/location", location)
+                    self.locations[key] = location
             if key not in self.batteries or self.batteries[key] != person.battery or force:
                 self.send(f"{base}/battery", "None" if person.battery is None else str(person.battery))
                 self.batteries[key] = person.battery
@@ -88,8 +92,7 @@ class Publisher:
                 if available == "online":
                     self.send(f"{base}/availability", available)
                 self.availability[key] = available
-        state = "ON" if snapshot.get("session_valid", snapshot["status"] not in
-            {"credential_required", "starting", "storage_error"}) and snapshot["status"] != "storage_error" else "OFF"
+        state = "ON" if snapshot["status"] in {"ready", "no_data"} else "OFF"
         if state != self.session or force:
             self.send(f"{PREFIX}/session", state)
             self.session = state

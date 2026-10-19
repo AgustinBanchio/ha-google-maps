@@ -145,6 +145,7 @@ def test_account_holder_location_without_account_email():
     data.extend([None, None, data[0][0]])
     people = parse_response(b")]}'\n" + json.dumps(data).encode())
     assert len(people) == 2
+    assert len(parse_response(b")]}'\n" + json.dumps(data).encode(), include_account=False)) == 1
     account = people[1]
     assert account.id == "google-maps-account" and account.display_name == "Account holder"
     assert account.latitude == people[0].latitude and account.address == "SYNTHETIC_ADDRESS"

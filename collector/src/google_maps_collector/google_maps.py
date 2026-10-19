@@ -145,7 +145,7 @@ def picture_url(value) -> str | None:
     return None
 
 
-def parse_response(body: bytes) -> list[Person]:
+def parse_response(body: bytes, include_account=True) -> list[Person]:
     try:
         if not body.startswith(b")]}'\n"):
             raise InvalidData()
@@ -163,7 +163,7 @@ def parse_response(body: bytes) -> list[Person]:
         entries = [(entry, False) for entry in data[0]]
         # Upstream's optional account-holder location has no profile metadata.
         # A local stable ID avoids requiring or publishing the account email.
-        if len(data) > 9 and data[9] is not None:
+        if include_account and len(data) > 9 and data[9] is not None:
             entries.append((data[9], True))
         for entry, account in entries:
             # Upstream shared_from_data/acct_from_data indices.
@@ -200,7 +200,8 @@ def parse_response(body: bytes) -> list[Person]:
 
 
 class GoogleMaps:
-    def __init__(self, session=None):
+    def __init__(self, session=None, *, include_account=True):
+        self.include_account = include_account
         self.session = session if session is not None else requests.Session()
         self.session.trust_env = False  # Ignore proxy, netrc and CA environment overrides.
 
@@ -230,7 +231,7 @@ class GoogleMaps:
                 if len(body) + len(chunk) > MAX_RESPONSE_BYTES:
                     raise InvalidData()
                 body.extend(chunk)
-            people = parse_response(bytes(body))
+            people = parse_response(bytes(body), self.include_account)
             return people, filter_cookies(self.session.cookies)
         except requests.RequestException:
             raise NetworkFailure() from None

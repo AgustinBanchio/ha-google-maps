@@ -13,9 +13,14 @@ from .config import Config
 
 
 def environment_config():
+    account = os.environ.get("INCLUDE_ACCOUNT", "true").lower()
+    if account not in {"true", "false"}:
+        raise ValueError("invalid account tracker setting")
     return Config(
         poll_seconds=int(os.environ.get("POLL_SECONDS", "60")),
-        freshness_seconds=int(os.environ.get("FRESHNESS_SECONDS", "900")),
+        freshness_seconds=int(os.environ.get("FRESHNESS_SECONDS", "0")),
+        max_gps_accuracy=int(os.environ.get("MAX_GPS_ACCURACY", "1000")),
+        include_account=account == "true",
         store_file=Path(os.environ.get("STORE_FILE", "/data/session.json")),
         key_file=Path(os.environ.get("KEY_FILE", "/run/secrets/store-key")),
         admin_file=Path(os.environ.get("ADMIN_FILE", "/run/secrets/admin-verifier")),
@@ -40,7 +45,7 @@ async def run(config):
         logger = logging.getLogger(name)
         logger.handlers = [logging.NullHandler()]
         logger.propagate = False
-    google = GoogleMaps()
+    google = GoogleMaps(include_account=config.include_account)
     mqtt = None
     tasks = []
     try:

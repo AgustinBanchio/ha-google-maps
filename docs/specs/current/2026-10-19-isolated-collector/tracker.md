@@ -1,11 +1,11 @@
 # Tracker: isolated Google Maps collector
 
 Plan: [plan.md](plan.md). Updated: 2026-10-19.
-Status: READY_FOR_OWNER_SETUP. The isolated production collector/broker is deployed and verified; real Google import and HA MQTT/People setup remain owner actions. Nine implementation tasks are DONE; Task 4.2 retains only live owner acceptance and the separately unauthorized reboot check.
+Status: IN_PROGRESS: owner-requested upstream behaviour parity. The isolated production collector/broker is deployed and verified; real Google import and HA MQTT/People setup remain owner actions. Nine implementation tasks are DONE; Task 4.2 retains only live owner acceptance and the separately unauthorized reboot check.
 
 ## Exact next action
 
-Follow docs/NEXT_STEPS.md: open the desktop SSH tunnel, read the owner-only local credentials file, import the Google session in the authenticated loopback UI, then add HA's standard MQTT integration and link trackers to People. Do not upload credentials in chat or configure the original cookie-based HA custom integration for this collector.
+Finish the parity correction described at the end of this tracker, run fresh ARM64/recovery checks at its clean source revision, and update only the authorized separate collector image with encrypted-state rollback. The owner already imported Google cookies privately and configured HA MQTT. Do not read credentials or modify/restart the existing stack.
 
 After owner setup, verify real polling, discovery and Person behavior. A full Pi reboot remains a separate explicit authorization; no reboot or existing stack restart is necessary to add MQTT. All persistent deployment approval requirements were satisfied by the owner's explicit collector/broker-only approval.
 
@@ -90,3 +90,6 @@ Owner expanded this correction to all original integration data. Implemented ful
 
 
 ARM64 first pass: 87 tests passed. Extended recovery check exposed a harness omission: its synthetic MQTT inspection subscribed only to state, while the new assertion also checks discovery. Fixed that subscription in the disposable harness; production was not changed. Added same-fix address/country backfill for old encrypted stores, retaining newer address/GPS on backward timestamps. Exact next action: rerun ARM64 tests/recovery at the corrected clean revision before collector-only deployment.
+
+
+Owner clarified the intended scope: same HA behaviour as the original, with safer credential handling. The e5f7520 ARM64 suite/recovery/release validation passed, but that candidate was not deployed because further comparison found behavioural differences. Corrected defaults now retain stationary/last-known fixes through Google errors, apply upstream 1000 m GPS quality selection, preserve three-minute missing-contact grace across restart, and update tracker battery/profile attributes without changing accepted GPS/source last_seen. Strict age expiry is opt-in (default 0), and account-holder collection can be disabled. Fresh local suite: 96 passed, 2 broker-dependent skips, one existing deprecation warning. Exact next action: commit/push this corrected behaviour, rerun disposable ARM64 suite/recovery/release, then collector-only deployment and aggregate live field/identity/baseline verification. No production change has yet occurred for this correction.

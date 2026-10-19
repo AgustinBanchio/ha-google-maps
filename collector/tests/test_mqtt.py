@@ -33,14 +33,17 @@ def test_discovery_contract_and_schema():
     assert "SYNTHETIC_SECRET" not in str(calls)
 
 
-def test_battery_change_does_not_publish_location():
+def test_battery_change_updates_tracker_without_changing_source_fix():
     calls = []
     publisher = Publisher(lambda topic, payload, **kw: calls.append((topic, payload)))
     publisher.sync(snapshot())
     calls.clear()
-    publisher.sync(snapshot(replace(PERSON, latitude=1, battery=40)))
-    assert not any(topic.endswith("/location") for topic, _ in calls)
+    publisher.sync(snapshot(replace(PERSON, battery=40)))
+    location = json.loads(next(value for topic, value in calls if topic.endswith("/location")))
+    assert location["latitude"] == PERSON.latitude and location["source_timestamp"] == PERSON.source_timestamp
+    assert location["battery_level"] == 40
     assert any(topic.endswith("/battery") and value == "40" for topic, value in calls)
+    calls.clear()
     publisher.sync(snapshot(replace(PERSON, source_timestamp=PERSON.source_timestamp - 1)))
     assert not any(topic.endswith("/location") for topic, _ in calls)
 
@@ -92,7 +95,9 @@ def test_google_names_update_discovery_without_new_gps_fix():
     calls.clear()
     publisher.sync(snapshot(replace(PERSON, display_name="Synthetic Alice Updated")))
     assert any(topic.endswith("/config") for topic, payload in calls)
-    assert not any(topic.endswith("/location") for topic, payload in calls)
+    location = json.loads(next(p for t, p in calls if t.endswith("/location")))
+    assert location["source_timestamp"] == PERSON.source_timestamp
+    assert location["full_name"] == "Synthetic Alice Updated"
     assert all("Synthetic Alice" not in topic for topic, payload in calls)
     assert "SYNTHETIC_SECRET" not in str(calls)
 
@@ -113,7 +118,19 @@ def test_all_upstream_attributes_and_independent_metadata_updates():
         "last_seen": "2027-01-15T08:00:00+00:00"}
     calls.clear()
     publisher.sync(snapshot(replace(person, battery=42, battery_charging=False)))
-    assert not any(t.endswith("/location") for t, p in calls)
+    updated = json.loads(next(p for t, p in calls if t.endswith("/location")))
+    assert updated["source_timestamp"] == person.source_timestamp
+    assert updated["latitude"] == person.latitude and updated["battery_charging"] is False
     details = json.loads(next(p for t, p in calls if t.endswith("/details")))
     assert details["battery_level"] == 42 and details["battery_charging"] is False
     assert "SYNTHETIC_SECRET" not in str(calls)
+
+
+def test_connectivity_sensor_reports_poll_failures_separately_from_trackers():
+    calls = []
+    publisher = Publisher(lambda topic, payload, **kw: calls.append((topic, payload)))
+    publisher.sync(snapshot())
+    calls.clear()
+    publisher.sync(snapshot(status="network_failure"))
+    assert ("google_maps_collector/session", "OFF") in calls
+    assert not any(t.endswith("/availability") and p == "offline" for t,p in calls)

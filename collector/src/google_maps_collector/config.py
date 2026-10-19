@@ -7,7 +7,9 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Config:
     poll_seconds: int = 60
-    freshness_seconds: int = 900
+    freshness_seconds: int = 0
+    max_gps_accuracy: int = 1000
+    include_account: bool = True
     upload_bytes: int = 1_048_576
     store_file: Path = field(default=Path("/data/session.json"), repr=False)
     key_file: Path = field(default=Path("/run/secrets/store-key"), repr=False)
@@ -24,12 +26,17 @@ class Config:
 
         for value, low, high in (
             (self.poll_seconds, 15, 3600),
-            (self.freshness_seconds, 300, 3600),
+            (self.max_gps_accuracy, 0, 1_000_000),
             (self.upload_bytes, 1, 1_048_576),
             (self.mqtt_port, 1, 65535),
         ):
             if type(value) is not int or not low <= value <= high:
                 raise ValueError("configuration value outside allowed bounds")
+        if (type(self.freshness_seconds) is not int or self.freshness_seconds != 0
+                and not 300 <= self.freshness_seconds <= 3600):
+            raise ValueError("invalid optional freshness limit")
+        if type(self.include_account) is not bool:
+            raise ValueError("invalid account tracker setting")
         if self.management_bind not in {"127.0.0.1", "0.0.0.0"}:
             raise ValueError("invalid management bind address")
         origin = urlsplit(self.management_origin)

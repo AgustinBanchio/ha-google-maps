@@ -15,8 +15,10 @@ services:
     environment:
       MQTT_HOST: broker
       MANAGEMENT_BIND: 0.0.0.0
+      MAX_GPS_ACCURACY: ${MAX_GPS_ACCURACY:-1000}
+      INCLUDE_ACCOUNT: ${INCLUDE_ACCOUNT:-true}
       POLL_SECONDS: ${POLL_SECONDS:-60}
-      FRESHNESS_SECONDS: ${FRESHNESS_SECONDS:-900}
+      FRESHNESS_SECONDS: ${FRESHNESS_SECONDS:-0}
     ports: ["127.0.0.1:8787:8787"]
     volumes:
       - type: bind

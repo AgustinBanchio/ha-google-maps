@@ -24,6 +24,7 @@ class Service:
         self.cookies = CookieJar()
         self.people: dict[str, Person] = {}
         self.present: set[str] = set()
+        self.missing_since: dict[str, float] = {}
         self.last_success = None
         self.status = "credential_required"
         self.failures = 0
@@ -50,6 +51,11 @@ class Service:
                         raise StoreError()
                     self.people[person.id] = person
                 self.present = set(data["present"])
+                self.missing_since = dict(data.get("missing_since", {}))
+                for identity in self.people.keys() - self.present:
+                    self.missing_since.setdefault(identity, self.clock())
+                for missing_at in self.missing_since.values():
+                    _number(missing_at, 0, 100_000_000_000)
                 self.last_success = data["last_success"]
                 if any(c.name in AUTH_NAMES for c in self.cookies):
                     self.status = "starting"
@@ -58,12 +64,13 @@ class Service:
                 raise StoreError() from None
         self._refresh_view()
 
-    def _document(self, cookies, people, present, now):
+    def _document(self, cookies, people, present, now, missing_since=None):
         return {"schema": 1,
             "cookies": [{**{name: getattr(c, name) for name in COOKIE_FIELDS},
                          "rest": dict(c._rest)} for c in cookies],
             "people": [asdict(p) for p in people.values()],
-            "present": sorted(present), "last_success": now}
+            "present": sorted(present), "last_success": now,
+            "missing_since": self.missing_since if missing_since is None else missing_since}
 
     def _validate_and_save(self, candidate):
         incoming, rotated = self.google.poll(candidate)
@@ -75,7 +82,12 @@ class Service:
                 raise InvalidData()
             present.add(person.id)
             previous = updated.get(person.id)
-            if previous is None or person.source_timestamp > previous.source_timestamp:
+            newer = previous is None or person.source_timestamp > previous.source_timestamp
+            accurate = previous is None or not previous.gps_accuracy or (
+                person.gps_accuracy <= self.config.max_gps_accuracy
+                if previous.gps_accuracy <= self.config.max_gps_accuracy
+                else person.gps_accuracy <= previous.gps_accuracy)
+            if newer and accurate:
                 updated[person.id] = person
             else:
                 # Battery data may change without a newer source observation.
@@ -84,8 +96,11 @@ class Service:
                     picture_url=person.picture_url, battery_charging=person.battery_charging,
                     address=person.address if person.source_timestamp == previous.source_timestamp else previous.address,
                     country_code=person.country_code if person.source_timestamp == previous.source_timestamp else previous.country_code)
-        self.store.save(self._document(rotated, updated, present, now))
+        missing = {identity: self.missing_since.get(identity, now)
+                   for identity in updated.keys() - present}
+        self.store.save(self._document(rotated, updated, present, now, missing))
         self.cookies, self.people, self.present = rotated, updated, present
+        self.missing_since = missing
         self.last_success = now
         self.status = "ready" if incoming else "no_data"
         self.session_valid = True
@@ -129,7 +144,7 @@ class Service:
     def _refresh_view(self):
         # Publish immutable views after a commit/state transition. Network polling
         # keeps the jar lock, but cannot delay freshness expiry or status reads.
-        self._view = (self.status, tuple(self.people.values()), frozenset(self.present), self.session_valid)
+        self._view = (self.status, tuple(self.people.values()), frozenset(self.present), self.session_valid, dict(self.missing_since))
         expirations = [c.expires for c in self.cookies if c.name in AUTH_NAMES and c.expires]
         expiry = None
         if expirations:
@@ -142,12 +157,16 @@ class Service:
             "approximate_cookie_expiry": expiry}
 
     def snapshot(self):
-        status, people, present, session_valid = self._view
+        status, people, present, session_valid, missing = self._view
         now = self.clock()
-        usable = session_valid and status not in {"credential_required", "starting", "storage_error"}
+        # Upstream retains the last known fix through network/auth failures and
+        # stationary old observations. A successful response omitting a contact
+        # starts its three-minute missing-data grace period.
         return {"status": status, "session_valid": session_valid, "people": people,
-            "available": frozenset(p.id for p in people if usable and p.id in present
-                and 0 <= now - p.source_timestamp < self.config.freshness_seconds)}
+            "available": frozenset(p.id for p in people
+                if (p.id in present or now - missing.get(p.id, now) < 180)
+                and (not self.config.freshness_seconds
+                     or 0 <= now - p.source_timestamp < self.config.freshness_seconds))}
 
     def management_status(self):
         return dict(self._management)

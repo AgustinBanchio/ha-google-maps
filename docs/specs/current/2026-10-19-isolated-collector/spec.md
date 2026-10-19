@@ -1,6 +1,6 @@
 # Isolated Google Maps collector: specification
 
-Status: agreed direction with explicit implementation defaults. Fork/preparation is authorized; substantial implementation begins on the owner's next instruction. Remote deployment is separately authorized.
+Status: implemented and deployed; current owner-directed correction preserves original HA behaviour/data and changes credential handling only. The separate collector/broker deployment is explicitly authorized; existing services remain excluded.
 
 ## Goal
 
@@ -26,7 +26,7 @@ No official Maps OAuth/API promise, new Google account, automatic contact reshar
 - [ ] AC5: The UI never asks for a Google password, exports cookies or exposes an arbitrary request endpoint. Upload limits, CSRF/origin protection, throttled login and redacted errors are tested.
 - [ ] AC6: Source session revocation produces credential-required status and a recoverable replacement path; transient network errors retry without deleting credentials.
 - [ ] AC7: Stable MQTT GPS trackers and separate battery/status sensors recover after broker/HA restarts and remain attachable to HA Persons. Trackers are visible and enabled by default, and expose all upstream person/location fields.
-- [ ] AC8: Older/same-timestamp fixes are not republished as newly observed locations because of battery-only changes. Stale fixes become unavailable after the configured TTL.
+- [ ] AC8: Preserve upstream location selection: reject older/same-time location fixes, apply the default 1000-metre accuracy filter, update miscellaneous attributes independently, and preserve last_seen. Keep last known GPS through network/auth errors and old stationary observations; missing contacts become unavailable after a three-minute grace period. Optional freshness expiry is disabled by default.
 - [ ] AC9: Collector/broker recreation, a targeted restart and an interrupted save preserve credentials/identity, and full Pi reboot recovery is demonstrated only with owner authorization.
 - [ ] AC10: Compose isolates the new service's data/secrets, omits privileged mode/Docker socket/HA mounts, and provides authenticated least-privilege MQTT access.
 - [ ] AC11: Canary credentials/locations do not appear in logs, management errors, MQTT or release artifacts outside the explicitly permitted person/location fields.
@@ -55,9 +55,9 @@ Discovery topic shapes:
 - homeassistant/sensor/google_maps_collector/<stable-contact-id>-battery/config
 - homeassistant/binary_sensor/google_maps_collector/session/config
 
-State topics live below google_maps_collector/. Derive stable opaque IDs from the upstream Google person ID; do not expose account email in topic names. Do not use display names for identity. Device tracker location attributes include latitude, longitude, gps_accuracy and source timestamp. Keep battery updates on a separate sensor so they do not make an old GPS fix appear newly updated. Include upstream full name, nickname, profile picture URL, address, last_seen, battery level and charging state in each GPS snapshot; publish current metadata independently through a Maps details timestamp sensor. Also preserve country_code from the upstream parser. Include account-holder GPS data if returned, with a local stable ID and generic Account holder label because no account profile is supplied. Names/locations are intended HA data; only authentication material is isolated. Existing IDs/topics remain stable.
+State topics live below google_maps_collector/. Derive stable opaque IDs from the upstream Google person ID; do not expose account email in topic names. Do not use display names for identity. Device tracker location attributes include latitude, longitude, gps_accuracy and source timestamp. Provide a separate battery sensor and update tracker battery/profile attributes as upstream does; retain the accepted source_timestamp/last_seen and GPS values when miscellaneous data changes. Include upstream full name, nickname, profile picture URL, address, last_seen, battery level and charging state in each GPS snapshot; also publish current metadata through a Maps details timestamp sensor. Also preserve country_code from the upstream parser. Include account-holder GPS data if returned, with a local stable ID and generic Account holder label because no account profile is supplied. Names/locations are intended HA data; only authentication material is isolated. Existing IDs/topics remain stable.
 
-Set source_type=gps, visible_by_default=true and enabled_by_default=true. Provide discovery/availability retention and last-will status. Persist broker data and the collector's last source timestamps. Republish discovery on broker reconnect and HA birth; never reset the source observation time. Default freshness TTL is 15 minutes, configurable from 5 to 60 minutes. Global credential-required status and per-contact stale status must not misrepresent a stale retained location as current.
+Set source_type=gps, visible_by_default=true and enabled_by_default=true. Provide discovery/availability retention and last-will status. Persist broker data and the collector's last source timestamps. Republish discovery on broker reconnect and HA birth; never reset the source observation time. Preserve upstream last-known-location availability by default; the connectivity sensor reports Google failures. Missing contacts get the upstream three-minute grace period, persisted across collector restart. Optional freshness expiry is 5 to 60 minutes, disabled by default.
 
 HA Person linkage is manual through Settings > People. Multiple GPS sources use HA's standard most-recently-updated selection; there is no guaranteed Companion App preference. Document the consequences and allow owners to hide raw trackers if they prefer; keep them enabled.
 

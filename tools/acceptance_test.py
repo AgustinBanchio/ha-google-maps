@@ -38,6 +38,7 @@ from google_maps_collector import google_maps, service
 from google_maps_collector.__main__ import main
 control = Path('/acceptance/control.json')
 class SyntheticGoogle:
+    def __init__(self, **kwargs): pass
     def poll(self, jar):
         data = json.loads(control.read_text())
         if data.get('reject'):
@@ -85,6 +86,7 @@ bootstrap(Path('/acceptance/private'), 'synthetic-acceptance-admin')
     env_file.write_text(f'COLLECTOR_IMAGE={image_id}\nCOLLECTOR_PRIVATE_DIR={directory}/private\n')
     config = json.loads(command(['docker','compose','--env-file',str(env_file),'-f','deploy/compose.yaml','config','--format','json'],cwd=ROOT))
     config['name'] = PROJECT
+    config['services']['collector']['environment']['FRESHNESS_SECONDS']='900'
     for section in ('networks', 'secrets'):
         for key, item in config.get(section, {}).items():
             if 'name' in item:

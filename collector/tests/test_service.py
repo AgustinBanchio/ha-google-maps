@@ -46,7 +46,7 @@ def test_timestamp_freshness_and_restart(setup):
     rebuilt.poll()
     assert rebuilt.snapshot()["available"] == {"synthetic"}
     now[0] += 900
-    assert rebuilt.snapshot()["available"] == set()
+    assert rebuilt.snapshot()["available"] == {"synthetic"}
 
 
 def test_invalid_import_preserves_session_and_store(setup):
@@ -134,6 +134,7 @@ def test_management_has_only_permitted_fields(setup):
 
 def test_staleness_is_not_blocked_by_network_poll(setup):
     service, google, now = setup
+    service.config = replace(service.config, freshness_seconds=900)
     service.import_cookies(parse_cookies(COOKIE))
     entered, release, finished = Event(), Event(), Event()
     def blocked(jar):
@@ -168,7 +169,7 @@ def test_invalid_session_remains_required_after_network_failure(setup):
     service.poll()
     assert service.status == "credential_required"
     assert not service.snapshot()["session_valid"]
-    assert not service.snapshot()["available"]
+    assert service.snapshot()["available"] == {"synthetic"}
 
 
 def test_restart_network_failure_does_not_validate_stored_session(setup):
@@ -179,7 +180,7 @@ def test_restart_network_failure_does_not_validate_stored_session(setup):
     rebuilt.poll()
     assert rebuilt.status == "network_failure"
     assert not rebuilt.snapshot()["session_valid"]
-    assert not rebuilt.snapshot()["available"]
+    assert rebuilt.snapshot()["available"] == {"synthetic"}
 
 
 def test_old_store_migration_and_name_only_poll_preserve_fix(setup):
@@ -217,3 +218,49 @@ def test_older_metadata_does_not_replace_location_address(setup):
     assert current.address == original.address and current.country_code == original.country_code
     assert current.source_timestamp == original.source_timestamp
     assert current.nickname == "Updated nickname"
+
+
+@pytest.mark.parametrize("old_accuracy,new_accuracy,accepted", [
+    (25, 1500, False), (25, 500, True), (1500, 2000, False),
+    (1500, 1400, True), (1500, 25, True), (0, 1500, True)])
+def test_upstream_gps_accuracy_filter_still_updates_misc(setup, old_accuracy, new_accuracy, accepted):
+    service, google, now = setup
+    google.people = [replace(google.people[0], gps_accuracy=old_accuracy)]
+    service.import_cookies(parse_cookies(COOKIE))
+    old = service.people["synthetic"]
+    google.people = [replace(old, gps_accuracy=new_accuracy, latitude=1.5,
+        source_timestamp=old.source_timestamp+1, battery=42, nickname="Updated")]
+    now[0] += 2
+    service.poll()
+    current = service.people["synthetic"]
+    assert current.latitude == (1.5 if accepted else old.latitude)
+    assert current.source_timestamp == (old.source_timestamp+1 if accepted else old.source_timestamp)
+    assert current.battery == 42 and current.nickname == "Updated"
+
+
+def test_upstream_missing_contact_grace_survives_restart_and_recovers(setup):
+    service, google, now = setup
+    service.import_cookies(parse_cookies(COOKIE))
+    person = service.people["synthetic"]
+    google.people = []
+    service.poll()
+    now[0] += 179
+    assert service.snapshot()["available"] == {"synthetic"}
+    rebuilt = Service(service.config, service.store, google, lambda: now[0])
+    assert rebuilt.snapshot()["available"] == {"synthetic"}
+    now[0] += 1
+    assert not rebuilt.snapshot()["available"]
+    google.people = [person]
+    rebuilt.poll()
+    assert rebuilt.snapshot()["available"] == {"synthetic"}
+    assert not rebuilt.missing_since
+
+
+def test_network_outage_keeps_stationary_location_without_age_limit(setup):
+    service, google, now = setup
+    service.import_cookies(parse_cookies(COOKIE))
+    google.error = NetworkFailure
+    now[0] += 86400
+    service.poll()
+    assert service.snapshot()["available"] == {"synthetic"}
+    assert service.people["synthetic"].source_timestamp == 1800000000
