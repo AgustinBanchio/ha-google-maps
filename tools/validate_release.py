@@ -53,7 +53,8 @@ def release_checks(record, lock_hash):
     if data["lock_sha256"] != lock_hash or not re.fullmatch(r"[0-9a-f]{40}", data["source_revision"]):
         raise ValueError("release source metadata mismatch")
     image = data["image"]
-    if not re.fullmatch(r"[a-zA-Z0-9._:/-]+@sha256:[0-9a-f]{64}", image):
+    local_id = HASH.fullmatch(image) is not None
+    if not local_id and not re.fullmatch(r"[a-zA-Z0-9._:/-]+@sha256:[0-9a-f]{64}", image):
         raise ValueError("release requires immutable image reference")
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)
@@ -61,7 +62,7 @@ def release_checks(record, lock_hash):
         raise ValueError("release requires the exact clean source revision")
     observed = json.loads(subprocess.check_output(["docker", "image", "inspect", image],
         cwd=ROOT, text=True, stderr=subprocess.DEVNULL))[0]
-    if (image not in observed.get("RepoDigests", [])
+    if ((observed.get("Id") != image if local_id else image not in observed.get("RepoDigests", []))
             or observed["Config"]["Labels"].get("org.opencontainers.image.revision") != revision
             or observed["Config"]["User"] != "10001:10001"):
         raise ValueError("image evidence mismatch")
