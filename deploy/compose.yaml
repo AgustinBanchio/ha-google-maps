@@ -6,7 +6,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp:rw,noexec,nosuid,size=8m]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=8m"]
     restart: unless-stopped
     init: true
     stop_grace_period: 90s
@@ -37,7 +37,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp:rw,noexec,nosuid,size=4m]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=4m"]
     restart: unless-stopped
     pids_limit: 32
     mem_limit: 64m

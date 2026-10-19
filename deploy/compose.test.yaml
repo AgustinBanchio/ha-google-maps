@@ -8,7 +8,7 @@ services:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./mosquitto.acl:/mosquitto/config/mosquitto.acl:ro
       - ./test/broker-passwords:/run/secrets/broker-passwords:ro
-    tmpfs: [/mosquitto/data:uid=1883,gid=1883,mode=0700]
+    tmpfs: ["/mosquitto/data:uid=1883,gid=1883,mode=0700"]
     healthcheck:
       test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-u", "collector", "-P", "synthetic-collector-password", "-t", "google_maps_collector/test/health", "-m", "ready", "-q", "1"]
       interval: 2s
