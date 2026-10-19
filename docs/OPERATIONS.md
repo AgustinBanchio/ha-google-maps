@@ -32,3 +32,7 @@ Do not run the original integration concurrently with the collector against the 
 Deployment requires the completed acceptance suite, explicit owner authorization, a pinned image and a documented rollback. Show the concrete proposed collector-only Compose changes. Do not restart the existing HA/OTBR/Matter stack or the Pi without explicit approval for that action.
 
 Credential import uses the authenticated loopback collector UI, never chat. Local code exists; see tracker.md for verification and pending container/host acceptance.
+
+## Collector management tunnel
+
+Run tools/Open-CollectorTunnel.ps1 from T3's terminal or desktop PowerShell 7. It uses DesktopCollectorTunnelWorker.ps1 in the same limited interactive desktop context as the command helper, preserves host-key checking, disables agent forwarding and accepts only public-key authentication. It never falls back to a Pi password. The Windows desktop must be logged in and 1Password available. Keep the calling terminal open; Ctrl+C closes the local tunnel and removes its temporary task. The helper also limits the default connection to eight hours. It changes no Pi service, SSH configuration or existing tunnel.
