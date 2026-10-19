@@ -19,3 +19,5 @@
 !custom_components/google_maps/gm_loc_sharing.py
 
 !custom_components/google_maps/**
+
+!tools/provision_data_token.py

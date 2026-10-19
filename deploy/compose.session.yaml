@@ -1,0 +1,38 @@
+name: google-maps-collector
+services:
+  collector:
+    image: ${COLLECTOR_IMAGE:?Set a reviewed collector image reference}
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=8m"]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    pids_limit: 64
+    mem_limit: 256m
+    environment:
+      MQTT_ENABLED: "false"
+      MANAGEMENT_BIND: 0.0.0.0
+    ports: ["127.0.0.1:8787:8787"]
+    volumes:
+      - type: bind
+        source: ${COLLECTOR_PRIVATE_DIR:?Set absolute private bootstrap directory}/data
+        target: /data
+        bind:
+          create_host_path: false
+    secrets: [store-key, admin-verifier, data-token]
+    networks: [collector]
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+networks:
+  collector:
+secrets:
+  store-key:
+    file: ${COLLECTOR_PRIVATE_DIR}/store-key
+  admin-verifier:
+    file: ${COLLECTOR_PRIVATE_DIR}/admin-verifier
+  data-token:
+    file: ${COLLECTOR_PRIVATE_DIR}/data-token

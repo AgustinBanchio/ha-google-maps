@@ -23,7 +23,8 @@ def provision(directory: Path, recipient_file: Path, envelope: Path):
     # existing deployment's credentials. No plaintext goes to stdout or SSH input.
     data = json.dumps({"admin_password": password,
         "mqtt_username": "homeassistant",
-        "mqtt_password": (directory / "ha-password").read_text()}).encode()
+        "mqtt_password": (directory / "ha-password").read_text(),
+        "data_token": (directory / "data-token").read_text()}).encode()
     encrypted = recipient.encrypt(data, padding.OAEP(mgf=padding.MGF1(hashes.SHA256()),
         algorithm=hashes.SHA256(), label=b"collector-owner-handoff-v1"))
     with envelope.open("xb") as output:

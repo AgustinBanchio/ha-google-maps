@@ -44,6 +44,15 @@ class SyntheticGoogle:
         if data.get('reject'):
             raise google_maps.InvalidSession()
         return [google_maps.Person('synthetic-acceptance-person', 0.5, 0.25, 25, data['timestamp'], data['battery'], display_name='Synthetic Acceptance', nickname='Synthetic', picture_url='https://lh3.googleusercontent.com/synthetic', address='Synthetic address', country_code='ZZ', battery_charging=False)], jar
+    def poll_upstream(self, jar):
+        from google_maps_collector.upstream import Observations
+        from google_maps_collector._upstream.gm_loc_sharing import GMPerson
+        data = json.loads(control.read_text())
+        if data.get('reject'): raise google_maps.InvalidSession()
+        person = GMPerson('synthetic-acceptance-person', 'Synthetic address', 'ZZ', 25,
+            round(data['timestamp']*1000), 0.5, 0.25, False, data['battery'],
+            'Synthetic Acceptance', 'Synthetic', 'https://lh3.googleusercontent.com/synthetic')
+        return Observations((person,), None, None), jar
     def close(self):
         pass
 original = service.Service
@@ -135,6 +144,20 @@ print(json.dumps(out))
         return json.loads(command(['docker','run','--rm','--network',PROJECT+'_collector',
             '--mount',f'type=bind,src={directory},dst=/acceptance,readonly',
             'google-maps-collector-test-tests','/repo/collector/.venv/bin/python','-c',code]))
+    def native_state():
+        code = """import json
+from pathlib import Path
+from urllib.request import Request,build_opener,ProxyHandler
+key=Path('/acceptance/private/data-token').read_text()
+request=Request('http://collector:8787/v1/locations',headers={'Host':'127.0.0.1:8787','Authorization':'Bearer '+key})
+with build_opener(ProxyHandler({})).open(request,timeout=10) as response:
+ data=json.loads(response.read())
+assert 'SYNTHETIC_SECRET' not in json.dumps(data)
+print(json.dumps(data))
+"""
+        return json.loads(command(['docker','run','--rm','--network',PROJECT+'_collector',
+            '--mount',f'type=bind,src={directory},dst=/acceptance,readonly',
+            'google-maps-collector-test-tests','/repo/collector/.venv/bin/python','-c',code]))
     try:
         subprocess.run(compose+['up','-d'],check=True)
         wait(lambda: command(compose+['exec','-T','collector','python','-m','google_maps_collector','--healthcheck'])=='')
@@ -154,7 +177,8 @@ print(json.dumps(out))
         assert tracker_config['visible_by_default'] is True
         assert tracker_config['entity_picture']==location['entity_picture']
         assert json.loads(initial[f'google_maps_collector/{identity}/details'])['last_seen']==location['last_seen']
-        events.append('synthetic import and ARM64 non-root startup passed')
+        assert native_state()['people'][0]['full_name']=='Synthetic Acceptance'
+        events.append('synthetic import, native data API and ARM64 non-root startup passed')
         before=command(compose+['exec','-T','collector','python','-c',
             "from pathlib import Path;import hashlib;print(hashlib.sha256(Path('/run/secrets/store-key').read_bytes()).hexdigest())"])
         subprocess.run(compose+['restart','broker'],check=True)
@@ -188,6 +212,16 @@ print(json.dumps(out))
         assert 'Synthetic Acceptance' not in logs
         assert 'Synthetic address' not in logs
         events.append('container logs contain no credential/contact canaries')
+        # The native mode fetches only on HA requests, and works without MQTT.
+        config['services']['collector']['environment']['MQTT_ENABLED']='false'
+        config_file.write_text(json.dumps(config))
+        subprocess.run(compose+['up','-d','--no-deps','--force-recreate','collector'],check=True)
+        wait(lambda: command(compose+['exec','-T','collector','python','-m','google_maps_collector','--healthcheck'])=='')
+        subprocess.run(compose+['stop','broker'],check=True)
+        native=native_state()
+        assert native['people'][0]['last_seen']==round(source*1000)/1000
+        assert native['people'][0]['battery_level']==42
+        events.append('native-only request-driven data survives recreation with broker stopped')
         # Inspect selected fields, never dump container environments.
         selected=command(compose+['exec','-T','collector','python','-c','import os;print(os.getuid())'])
         assert selected=='10001'

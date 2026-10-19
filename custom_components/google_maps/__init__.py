@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from functools import partial
 import logging
 from typing import cast
 
@@ -26,7 +25,6 @@ from .helpers import (
     ConfigID,
     ConfigUniqueIDs,
     UniqueID,
-    cookies_file_path,
     dev_ids,
 )
 

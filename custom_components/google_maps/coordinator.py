@@ -47,7 +47,6 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
 
     config_entry: ConfigEntry
     _api: CollectorClient
-    _cookies_last_synced: datetime
     _unsub_exp: Callable[[], None] | None = None
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -57,7 +56,6 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
         # The account's username is used as the config entry's unique ID.
         self._account_email = cast(str, entry.unique_id)
         self.cookie_lock = Lock()
-        self._unsub_final_write = lambda: None
 
         super().__init__(
             hass,
@@ -72,11 +70,12 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
         """Cancel listeners, save cookies & close API."""
         await super().async_shutdown()
         self._unsub_all()
-        self.hass.async_add_executor_job(self._api.close)
+        if hasattr(self, "_api"):
+            async with self.cookie_lock:
+                await self.hass.async_add_executor_job(self._api.close)
 
     def _unsub_all(self) -> None:
         """Run removers."""
-        self._unsub_final_write()
         self._unsub_expiration()
 
     def _unsub_expiration(self) -> None:
@@ -115,7 +114,6 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
     def _source_expiration_synced(self, shutting_down: bool = False) -> None:
         """Retain upstream expiry repairs using non-secret source metadata."""
         cookies_expiration = self._api.cookies_expiration
-        self._cookies_last_synced = dt_util.utcnow()
         if expiring_soon(cookies_expiration):
             self._create_issue()
         else:

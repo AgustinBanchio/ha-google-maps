@@ -17,3 +17,6 @@ Open the private management tunnel and import a renewed Google cookie export at 
 Do not remove or replace the existing MQTT integration blindly. A supported migration needs a reviewed mapping of old tracker entity IDs and HA Person/automation links; MQTT platform identities do not automatically become Google Maps identities. Keep the old service release and encrypted state backup until native tracking is verified. Read the active implementation tracker and deployment review before changing production.
 
 No HA/Matter/OTBR Compose or Thread permission changes are required. Installing a custom integration can require a targeted HA restart; this is a separate operational action from preparing code/tests. Do not reboot the Pi or restart other services.
+
+
+For a legacy installation of the original cookie-based HA integration, migration deliberately does not read or delete old cookie files. Reconfigure its connection to the external service and remove/revoke obsolete HA cookie copies privately after verifying the external session. This does not apply to the owner's MQTT-only installation, which never stored Google cookies in HA.

@@ -127,6 +127,8 @@ class Service:
                 self.credential_required = False
                 self.failures = 0
                 self._refresh_view()
+                self._management = {**self._management,
+                    "contact_count": len(observations.people) + int(observations.account is not None)}
                 return {"schema": 1, "upstream_revision": REVISION,
                     "people": [asdict(person) for person in observations.people],
                     "account": asdict(observations.account) if observations.account else None,
@@ -135,6 +137,11 @@ class Service:
                 self.session_valid = False
                 self.credential_required = True
                 self.status = "credential_required"
+                self._refresh_view()
+                raise
+            except (NetworkFailure, InvalidData, StoreError) as error:
+                self.status = ("storage_error" if isinstance(error, StoreError) else
+                    "network_failure" if isinstance(error, NetworkFailure) else "parser_failure")
                 self._refresh_view()
                 raise
 

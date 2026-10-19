@@ -8,19 +8,7 @@ import math
 import time
 from urllib.parse import urlsplit
 
-import requests
-
 URL = "https://www.google.com/maps/rpc/locationsharing/read"
-PARAMS = {
-    "authuser": 2, "hl": "en", "gl": "us",
-    "pb": (
-        "!1m7!8m6!1m3!1i14!2i8413!3i5385!2i6!3x4095"
-        "!2m3!1e0!2sm!3i407105169!3m7!2sen!5e1105!12m4"
-        "!1e68!2m2!1sset!2sRoadmap!4e1!5m4!1e4!8m2!1e0!"
-        "1e1!6m9!1e12!2i2!26m1!4b1!30m1!"
-        "1f1.3953487873077393!39b1!44e1!50e0!23i4111425"
-    ),
-}
 AUTH_NAMES = {"__Secure-1PSID", "__Secure-3PSID"}
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 

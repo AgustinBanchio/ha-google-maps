@@ -158,7 +158,7 @@ class GoogleMapsConfigFlow(ConfigFlow, GoogleMapsFlow, domain=DOMAIN):
                     return await self.async_step_done()
                 return await self.async_step_account_entity()
         schema = vol.Schema({
-            vol.Required(CONF_USERNAME, default=entry.unique_id if entry else vol.UNDEFINED): str,
+            vol.Required(CONF_USERNAME, default=entry.unique_id if entry else vol.UNDEFINED): TextSelector(TextSelectorConfig(type=TextSelectorType.EMAIL)),
             vol.Required("endpoint", default=entry.data.get("endpoint", DEFAULT_ENDPOINT) if entry else DEFAULT_ENDPOINT): str,
             vol.Required("data_token"): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
         })

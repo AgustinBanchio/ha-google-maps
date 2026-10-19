@@ -31,3 +31,16 @@ jobs:
       - name: Remove disposable project
         if: always()
         run: docker compose -f deploy/compose.test.yaml down --volumes
+
+  native-ha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Protected upstream modules and update simulation
+        run: |
+          python tools/check_upstream.py
+          python tools/test_upstream_rebase.py
+      - name: Original HA entities and external source contract
+        run: docker run --rm --network none --entrypoint python --workdir /repo -e HA_NATIVE_SOURCE=/repo -v "$PWD:/repo:ro" ghcr.io/home-assistant/home-assistant:2026.10.1 /repo/tests/native/run_tests.py

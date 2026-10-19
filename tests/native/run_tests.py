@@ -7,6 +7,8 @@ from copy import deepcopy
 from dataclasses import asdict
 from datetime import UTC, datetime
 import json
+import os
+import inspect
 from pathlib import Path
 import sys
 import tempfile
@@ -14,15 +16,18 @@ import traceback
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ["HA_NATIVE_SOURCE"]) if "HA_NATIVE_SOURCE" in os.environ else Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntries
 from homeassistant.setup import async_setup_component
-from homeassistant.helpers import entity_registry as er
+from homeassistant import loader
+from homeassistant.helpers import entity_registry as er, device_registry as dr, issue_registry as ir, area_registry as ar
 from custom_components.google_maps import collector_client
 from custom_components.google_maps.gm_loc_sharing import GMPerson, GMLocSharing
 from custom_components.google_maps.const import CONF_CREATE_ACCT_ENTITY, CONF_MAX_GPS_ACCURACY
+
+DIAGNOSTICS = []
 
 TOKEN = "SYNTHETIC_DATA_ACCESS_KEY_000000000000000000000"
 ACCOUNT = "synthetic-owner@example.invalid"
@@ -62,7 +67,20 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         self.patches = [patch("custom_components.google_maps.coordinator.CollectorClient", self.client),
                         patch("custom_components.google_maps.config_flow.CollectorClient", self.client)]
         for item in self.patches: item.start()
+        initialized = loader.async_setup(self.hass)
+        if inspect.isawaitable(initialized):
+            await initialized
+        self.hass.config.skip_pip = True
+        self.hass.config_entries = ConfigEntries(self.hass, {})
         await self.hass.config_entries.async_initialize()
+        dr.async_setup(self.hass)
+        for module in (ar, dr, er, ir):
+            if hasattr(module, "async_load"):
+                initialized = module.async_load(self.hass)
+            else:
+                initialized = module.async_get(self.hass).async_load()
+            if inspect.isawaitable(initialized):
+                await initialized
         assert await async_setup_component(self.hass, "homeassistant", {})
 
     def set_document(self):
@@ -88,6 +106,8 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
             options={CONF_CREATE_ACCT_ENTITY:account,CONF_MAX_GPS_ACCURACY:1000,"scan_interval":60},
             source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[])
         await self.hass.config_entries.async_add(self.entry)
+        self.assertEqual(str(self.entry.state), "ConfigEntryState.LOADED",
+            f"entry setup state={self.entry.state} reason={getattr(self.entry, 'reason', None)} diagnostics={DIAGNOSTICS[-2:]}")
         await self.hass.async_block_till_done()
         self.assertTrue(self.entry.runtime_data.coordinator.last_update_success)
         return self.entry.runtime_data.coordinator
@@ -101,7 +121,7 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
 
     async def refresh(self, coordinator):
         self.set_document()
-        await coordinator.async_request_refresh()
+        await coordinator.async_refresh()
         await self.hass.async_block_till_done()
 
     async def test_original_entity_fields_accuracy_metadata_and_restore(self):
@@ -173,6 +193,57 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.hass.states.get(entity_id).attributes["friendly_name"],"Google Maps "+ACCOUNT)
         self.assertEqual(self.entry.runtime_data.coordinator.update_interval.total_seconds(),120)
 
+    async def test_original_connectivity_failures_keep_last_known_tracker(self):
+        coordinator = await self.add_entry()
+        previous = self.tracker()
+        for status in (503, 502, 409):
+            self.status = status
+            await coordinator.async_refresh()
+            await self.hass.async_block_till_done()
+            self.assertFalse(coordinator.last_update_success)
+            current = self.tracker()
+            self.assertEqual(current.attributes["latitude"], previous.attributes["latitude"])
+            self.assertEqual(current.attributes["last_seen"], previous.attributes["last_seen"])
+            self.assertNotEqual(current.state,"unavailable")
+            states = self.hass.states.async_all("binary_sensor")
+            self.assertTrue(any(state.state == "off" for state in states))
+        self.status = 200
+        await coordinator.async_refresh()
+        await self.hass.async_block_till_done()
+        self.assertTrue(coordinator.last_update_success)
+        self.assertTrue(any(state.state == "on" for state in self.hass.states.async_all("binary_sensor")))
+
+    async def test_original_inaccurate_first_fix_then_improving_accuracy(self):
+        self.raw[0][0][1][3] = 2000
+        self.set_document()
+        coordinator = await self.add_entry()
+        self.assertEqual(self.tracker().attributes["gps_accuracy"],2000)
+        expected_latitude = 0.5
+        for accuracy,latitude,accepted in ((3000,1.1,False),(1500,1.2,True),(1000,1.3,True),(2000,1.4,False)):
+            self.raw[0][0][1][2] += 1000
+            self.raw[0][0][1][1][2] = latitude
+            self.raw[0][0][1][3] = accuracy
+            await self.refresh(coordinator)
+            if accepted: expected_latitude = latitude
+            self.assertEqual(self.tracker().attributes["latitude"],expected_latitude)
+        self.raw[0][0][6][1] = "https://lh3.googleusercontent.com/updated-synthetic-picture"
+        await self.refresh(coordinator)
+        self.assertEqual(self.tracker().attributes["entity_picture"],self.raw[0][0][6][1])
+
+    async def test_legacy_native_entry_migration_does_not_read_or_delete_cookies(self):
+        from custom_components.google_maps import async_migrate_entry
+        legacy=Path(self.temp.name)/"legacy-cookie-canary.txt"
+        legacy.write_text("SYNTHETIC_LEGACY_COOKIE_CANARY")
+        entry=ConfigEntry(version=3,minor_version=1,domain="google_maps",title=ACCOUNT,
+            data={"cookies_file":str(legacy)},options={CONF_CREATE_ACCT_ENTITY:True,CONF_MAX_GPS_ACCURACY:1000,"scan_interval":60},
+            source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[])
+        self.assertTrue(await async_migrate_entry(self.hass,entry))
+        self.assertEqual(entry.version,4)
+        self.assertEqual(entry.unique_id,ACCOUNT)
+        self.assertNotIn("cookies_file",entry.data)
+        self.assertEqual(entry.data["data_token"],"")
+        self.assertEqual(legacy.read_text(),"SYNTHETIC_LEGACY_COOKIE_CANARY")
+
     async def test_native_configuration_and_original_options_flow(self):
         result=await self.hass.config_entries.flow.async_init("google_maps",context={"source":"user"})
         self.assertEqual(result["step_id"],"source")
@@ -201,7 +272,17 @@ class JSONResult(unittest.TestResult):
 
 if __name__ == "__main__":
     import logging
-    logging.disable(logging.CRITICAL)
+    class Diagnostics(logging.Handler):
+        def emit(self, record):
+            if record.levelno >= logging.ERROR:
+                if record.exc_info:
+                    error = record.exc_info
+                    DIAGNOSTICS.append({"type":error[0].__name__, "message":str(error[1]),
+                        "frames":[{"file":Path(f.filename).name,"line":f.lineno} for f in traceback.extract_tb(error[2])[-4:]]})
+                else:
+                    DIAGNOSTICS.append({"message":record.getMessage()[:500]})
+    logging.getLogger().handlers = [Diagnostics()]
+    logging.getLogger().setLevel(logging.ERROR)
     suite=unittest.defaultTestLoader.loadTestsFromTestCase(NativeRuntime)
     result=JSONResult();suite.run(result)
     report={"tests":result.testsRun,"failures":len(result.failures),"errors":len(result.errors),"details":result.details}
