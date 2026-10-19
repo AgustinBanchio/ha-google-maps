@@ -1,6 +1,6 @@
 # Set up the isolated collector
 
-Local implementation is available. Container recovery, ARM64 startup and real Google compatibility must pass before deployment. Check the current tracker for observed results. These instructions do not authorize Pi changes.
+Local implementation, ARM64 container recovery and release checks pass. Real Google compatibility remains an owner session-import check. Check the current tracker for observed results. These instructions do not authorize Pi changes.
 
 ## Develop with synthetic data
 
@@ -73,3 +73,11 @@ The default freshness limit is 15 minutes, configurable from 5 to 60 minutes. Ex
 ## Release metadata validation
 
 Run tools/validate_release.py --source-only --wheel collector/dist/google_maps_collector-0.1.0-py3-none-any.whl from the root through the collector environment to inspect locked distribution hashes, base-image pins and wheel contents. This does not validate a release image. The default command requires an ignored .local/release.json containing source_revision, lock_sha256, image, wheel, wheel_sha256, arm64_startup and container_recovery. The final two fields are recorded as passed only after their actual checks; attach the sanitized evidence to verification.md. The validator also requires a clean matching Git revision and locally inspected immutable image metadata.
+
+## Prepared owner handoff
+
+The current release was built on ARM64 and can be pinned by its exact local Docker image ID as well as a registry digest. It is retained on the Pi; no registry login or image publication is needed. The private release record identifies the matching clean code revision and wheel/lock hashes.
+
+After persistent deployment is explicitly approved, tools/provision_collector.py can provision once and encrypt the generated owner passwords to an ephemeral workstation public key. The Pi keeps only the admin verifier; the workstation receives an owner-only ignored .local/owner-handoff/SETUP-PRIVATE.txt. Copy these owner credentials into your password manager, then delete the handoff. No plaintext password goes into SSH arguments/InputText, chat, Git or tool output.
+
+From a normal desktop PowerShell session, tools/Open-CollectorTunnel.ps1 opens the verified SSH loopback tunnel using the existing private connection metadata and normal 1Password approval. Keep the terminal open while visiting http://127.0.0.1:8787.

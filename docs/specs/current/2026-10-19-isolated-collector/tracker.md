@@ -1,17 +1,13 @@
 # Tracker: isolated Google Maps collector
 
 Plan: [plan.md](plan.md). Updated: 2026-10-19.
-Status: IN_PROGRESS at Task 4.1. Eight of ten tasks complete for local implementation/preparation. Feature acceptance is not complete.
+Status: BLOCKED at Task 4.2 awaiting explicit persistent-deployment approval. Nine of ten tasks complete for implementation and automated acceptance; owner session/HA setup remains.
 
 ## Exact next action
 
-Provide a working local Linux Docker engine or an explicitly authorized disposable development environment. Do not use the Pi as an implicit deployment/test target. Then run:
+Obtain explicit permission to start the two persistent services in the separate google-maps-collector Compose project and provision their new credentials. Automatic approval review rejected that action because it interpreted the owner's wording as preparation, not explicit production mutation. See docs/DEPLOYMENT_REVIEW.md for the concrete image, paths, ports, checks and rollback. Do not retry the rejected action indirectly.
 
-```sh
-docker compose -f deploy/compose.test.yaml up --build --abort-on-container-exit --exit-code-from tests
-```
-
-Review/fix the two presently unexecuted broker tests. Extend verification to actual broker restart, collector/broker container recreation, mounted-secret ownership and linux/arm64 startup. The current broker tests cover ACL denial, delivery and subscriber reconnect/retained timestamp; they do not yet exercise actual broker/container recreation. Produce a clean source revision, built collector image digest and release record, then run tools/validate_release.py without --source-only. Only after Task 4.1 passes prepare the concrete host-specific deployment review and request any needed authorization for Task 4.2.
+After approval, recheck free ports and unchanged original three-container baseline, provision only the new private directory, start/recreate only the new project, and prepare the private owner handoff. The owner imports Google cookies through SSH/local UI and adds HA's MQTT integration. No existing stack/permission/service changes or reboot are authorized.
 
 ## Tasks
 
@@ -25,38 +21,30 @@ Review/fix the two presently unexecuted broker tests. Extend verification to act
 | 2.4 Authenticated management UI | 2 | DONE | 2026-10-19 |
 | 3.1 Container broker and bootstrap | 3 | DONE | 2026-10-19 |
 | 3.2 Setup recovery and Person docs | 3 | DONE | 2026-10-19 |
-| 4.1 Privacy and restart suite | 4 | IN_PROGRESS | 2026-10-19 |
-| 4.2 Authorized Pi acceptance | 4 | PENDING | 2026-10-19 |
+| 4.1 Privacy and restart suite | 4 | DONE | 2026-10-19 |
+| 4.2 Authorized Pi acceptance | 4 | BLOCKED | 2026-10-19 |
 
 Status values: PENDING, IN_PROGRESS, DONE, FAILED, BLOCKED. DONE for packaging/docs records preparation checks, not executed container/host acceptance.
 
 ## Current verification evidence
 
-Final local execution on Windows with CPython 3.13.16 and uv 0.13.1:
+2026-10-19 continuation: implementation committed/pushed on feature/isolated-collector, draft PR https://github.com/AgustinBanchio/ha-google-maps/pull/1. Source used for the built release is ce2f19ecf99c2dc90d54a8a54e2a3ce30b27bc01. No pending collector code or tests are inferred from this report.
 
-- uv sync --frozen and uv lock --check passed; CLI --help/--version passed without credentials.
-- uv run --frozen pytest -q: **73 passed, 2 skipped**, one Starlette test-client deprecation warning. The skipped tests require BROKER_TEST_HOST for the disposable broker.
-- Google transport: intercepted actual Requests construction, TLS, proxy/netrc isolation, redirect rejection, exact cookie domains, parser bounds/types, synthetic locations and fixed errors.
-- Store: unique-nonce AES-GCM, wrong/missing keys, corruption/version/tampering, interrupted replacement preserving the old file, no plaintext credential canary and restart reconstruction. POSIX directory fsync/ownership branches are implemented but unexecuted here.
-- Lifecycle: genuine newer fixes, separate battery changes, stale TTL, serialized poll/import, rejected replacement, rotation, network/auth/parser/store recovery, cold restart and a fresh interpreter recovering the same source timestamp. Slow polling cannot delay freshness checks. Revocation remains credential-required after a later network error; startup network failure cannot validate a stored session.
-- Management: scrypt verifier, private sessions, expiry/restart/logout, CSRF/Host/Origin, throttling including concurrent slow-body attempts, malformed/oversized input and an ASGI streaming test stopping at the first over-limit chunk.
-- MQTT: intercepted discovery/state schema, hidden enabled GPS trackers, opaque IDs, battery isolation, LWT, availability and exact birth subscription. No actual HA acceptance is claimed.
-- Bootstrap: synthetic first/repeat/partial/interrupted provisioning and fixed CLI startup errors. Native execution defaults to loopback; Compose publishes only loopback.
-- Production and test docker compose config --quiet passed with synthetic bootstrap files. Python, uv and Mosquitto registry manifests were resolved to pinned digests; an ARM64 manifest exists, but startup was not tested.
-- uv build produced wheel and source archive. tools/validate_release.py --source-only --wheel ... passed. Build context/artifact allowlists exclude private operational files and synthetic test credentials from production artifacts.
-- pip-audit 2.10.1 against the complete exported frozen runtime requirements reported **No known vulnerabilities found** on 2026-10-19. This is a point-in-time advisory scan, not proof of absence of vulnerabilities.
-- Native browser smoke: login page rendered, synthetic admin login/status/logout succeeded via T3 preview. No Google cookies were imported and no live Google request was made. The temporary local process/tab were stopped/closed.
-- git diff --check passed. custom_components/ remains identical to upstream b2132123d46c47e5761d5d91cc08ca6b712fe6c1; the upstream remote is retained.
+- Fresh Windows suite: 74 passed, 2 broker tests skipped, one Starlette test-client deprecation warning.
+- Fresh disposable Pi ARM64 suite: 76 passed, including both real Mosquitto ACL/reconnect tests; no skips. The Linux ownership/durability paths executed there.
+- Production-image host harness: actual broker restart and both-container recreation preserved encrypted session/key, stable contact identity and source timestamp; invalid replacement, independent stale TTL, non-root UID 10001 and container log canary checks passed. Uses only an explicit synthetic transport; never contacted Google with real or synthetic cookies.
+- Docker runtime testing caught unquoted tmpfs option lists; those are fixed in the new Compose files. The existing Compose stack was untouched.
+- Image sha256:e543a5ea5d8fe2597468d546d8fb01a24bc7f2b548349a8c41fb60d67084abd3 is built locally on ARM64, retained by immutable image ID. Source revision, dependency lock hash, wheel hash and acceptance evidence are retained in the private release record. Full tools/validate_release.py passed (release_metadata_passed). No registry publication is required for this local image; this is distinct from a registry RepoDigest.
+- GitHub HACS, hassfest, Linux/Windows unit and broker jobs passed. Fork issues/topics were enabled for HACS metadata validation. A draft mistakenly targeting upstream was immediately closed and replaced with the fork PR.
+- Native UI login/status/logout smoke and streaming/concurrency/privacy regression checks passed in the earlier implementation session; fresh automated suite reruns cover their code. uv lock/build/source artifact checks pass. Point-in-time runtime pip-audit reported no known vulnerabilities in the preceding session; not repeated as a new scan claim.
+- Selected metadata of all three original containers is identical before/after ARM64 testing: IDs, start times, restart counts, status, privileges and network/Compose service metadata. No existing service was restarted or reconfigured. Disposable test containers were removed.
+- Upstream runtime remains identical to b2132123d46c47e5761d5d91cc08ca6b712fe6c1. The upstream remote remains intact. Private files/artifacts/tooling remain ignored.
 
-Full release validation intentionally returns release_validation_incomplete: there is no clean release revision/image record, built collector image digest or ARM64/container recovery evidence. CI definitions exist but have not been run on GitHub in this session. Changes remain uncommitted.
+## Current blocker
 
-## Blocker evidence and remaining work
+Automatic approval review rejected starting persistent collector/broker services and creating/delivering their credentials. It requires clearer explicit deployment authorization; the rejection was not bypassed. Production was not deployed, owner credentials were not provisioned, no Google session was imported and no Pi reboot occurred. An unused ephemeral owner-recipient key was generated only in an owner-only local directory for the approved encrypted handoff design.
 
-The attempted disposable Compose suite failed before starting containers:
-
-> failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine ... The system cannot find the file specified.
-
-Docker Desktop's Linux engine is unavailable. No engine/service was started or modified. Task 4.1 is partial: native privacy/process reconstruction checks exist and pass; the broker harness exists but has not executed; actual broker restart/container recreation and ARM64 acceptance still require implementation/execution in the working environment. Do not equate the process-reconstruction test with container or Pi reboot recovery.
+Task 4.1 is DONE [9/10 tasks complete]; Task 4.2 remains BLOCKED on this exact approval and then owner-controlled Google/HA setup. The earlier missing Windows Docker engine is no longer the test blocker: disposable ARM64 testing ran on the Pi under the owner's continuation instruction.
 
 ## Preparation and implementation notes
 

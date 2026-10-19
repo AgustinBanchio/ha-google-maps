@@ -1,6 +1,6 @@
 # Continue this project
 
-This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. Packaging and release verification are in progress; nothing has been deployed on the Pi.
+This is AgustinBanchio's fork of pnbruckner/ha-google-maps. The upstream integration remains unchanged. A separate collector is now implemented locally with encrypted session storage, polling, MQTT discovery and authenticated management. ARM64 broker/recovery tests and release validation now pass. Persistent deployment awaits explicit approval; nothing has been deployed into the production collector project.
 
 Read these in order:
 
@@ -13,7 +13,7 @@ Read these in order:
 7. [Operations access](docs/OPERATIONS.md).
 8. [Collector setup](docs/SETUP.md) and [recovery](docs/RECOVERY.md).
 
-Use tracker.md for exact current evidence and next action. No real Google credentials have been supplied. Docker's Linux engine was unavailable during Windows implementation; container builds/recovery and ARM64 execution must not be reported as passed until observed.
+Use tracker.md for exact current evidence and next action. No real Google credentials have been supplied. The local Windows Docker engine was unavailable, so disposable ARM64 container tests ran on the Pi. See tracker.md for fresh results and the exact pending deployment approval.
 
 The existing upstream README describes the original integration. Collector source and tests live in collector/, packaging in deploy/. The owner's local checkout is D:/repos/ha-google-maps. Ignored .local/ contains private operational context and isolated development tooling; a fresh clone does not include it.
 

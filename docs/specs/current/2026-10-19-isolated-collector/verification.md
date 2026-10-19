@@ -1,24 +1,26 @@
 # Verification: isolated collector
 
-Date: 19 October 2026. Overall: PARTIAL, not ready for deployment. See tracker.md for commands, counts, blocker and exact next action. No real Google session or Pi changes were used.
+19 October 2026. Verdict: PARTIAL for end-to-end feature acceptance; automated implementation/release verification PASS. Persistent deployment awaits explicit approval after automatic review rejected it. Google import and HA setup remain owner actions.
 
-| Criterion | Local evidence | Remaining acceptance |
+| Criterion | Evidence | Verdict |
 |---|---|---|
-| AC1 Isolation and credential privacy | Separate package, Docker UID/config, intercepted transport and privacy tests | Built ARM64 image, effective container/host isolation and live compatibility |
-| AC2 Restricted HTTPS origin | Actual Requests preparation, TLS, domain filtering and redirect tests pass | Real Google protocol compatibility |
-| AC3 Encrypted persistent jar | Tamper/key/interruption/reconstruction tests pass | POSIX durability and mounted key/store behavior in containers |
-| AC4 Validate-before-replace UI | Failed-import/concurrency/store tests pass | Real candidate import privately after authorization |
-| AC5 Management boundaries | Authentication/session/CSRF/Origin/Host/throttling/stream bounds pass; native browser login/status/logout passed | Container-exposed listener/exposure checks |
-| AC6 Revocation and recovery | Synthetic auth/network/parser/rotation cases pass; revocation stays fail-closed through later network failures | Real session revocation behavior |
-| AC7 MQTT/People recovery | Discovery/schema/freshness unit tests pass; setup documents manual linkage | Broker harness execution, actual HA discovery, restart and Person behavior |
-| AC8 Source freshness | Same/older/battery-only/TTL tests pass; source timestamp survives reconstruction | HA retained-message/update-time behavior |
-| AC9 Restart/reboot recovery | Atomic interruption and new-interpreter recovery pass | Actual collector/broker recreation, targeted restart and separately authorized Pi reboot |
-| AC10 Compose/ACL isolation | Both configs validate; pinned manifests and restrictive mounts/ACL definitions reviewed | Effective Linux permissions and live ACL denials |
-| AC11 Canary privacy | Native logs/errors/MQTT schemas/encrypted store/wheel checks pass | Container logs, broker traffic and full release artifacts |
-| AC12 Reproducible releases | Exact hashed lock, dependency advisory review, pinned base manifests, source metadata validator and build artifacts | Clean release revision, collector image digest, ARM64 startup and complete release record |
+| AC1 Isolated personal-session collector | deploy/Dockerfile USER 10001; production-image ARM64 startup and privacy tests pass | PARTIAL: real personal-session import remains |
+| AC2 Restricted HTTPS origin | google_maps.py fixed URL, TLS, redirect rejection/filtering; test_google_maps.py intercepted Requests paths pass | PASS for automated transport boundary; live compatibility unverified |
+| AC3 Encrypted persistent jar | store.py AES-GCM/atomic fsync; store tests plus actual container recreation/key identity pass | PASS with synthetic credentials |
+| AC4 Validate-before-replace UI | web.py upload + service.py serialized commit; failed replacement in actual production-image harness passes | PASS with synthetic transport |
+| AC5 Management boundaries | test_web.py auth, CSRF/Host/Origin, concurrency throttle and ASGI streaming bound; native UI smoke | PASS |
+| AC6 Revocation/recovery | test_service.py auth/network/rotation/restart validity; invalid replacement in container harness | PASS for synthetic lifecycle; real revocation unverified |
+| AC7 MQTT and People | real Mosquitto discovery/ACL/reconnect tests; production-image broker restart and recreation preserve identity | PARTIAL: actual HA discovery/Person linkage remains |
+| AC8 Source freshness | same/older/battery-only unit checks; source timestamp after actual recreation; live broker stale availability check | PASS for collector; HA selection during retained replay remains an operational limit |
+| AC9 Restart and reboot | interrupted writes, new interpreter, actual broker restart and both-container recreation pass | PARTIAL: full Pi reboot deliberately not authorized/executed |
+| AC10 Compose/ACL isolation | actual ARM64 UID/mount startup, real ACL denial tests, separate test project; existing three-container metadata unchanged | PASS for tested image/config; persistent deployment pending |
+| AC11 Canary privacy | native privacy/store/UI/MQTT/wheel checks; production-image container log canary scan | PASS for synthetic automated scope |
+| AC12 Reproducibility | hash-locked distributions, pinned bases, clean source ce2f19e, immutable locally built image and wheel hash; full release validator passed | PASS; no registry image publication or automatic upstream update |
 
-Final native suite: 73 passed, 2 broker tests skipped, one upstream test-client deprecation warning. pip-audit found no known runtime dependency vulnerabilities at the review date. Linux/Windows CI jobs and disposable broker CI are configured but not observed here.
+Fresh commands/results: Windows pytest 74 passed / 2 broker skips; Pi ARM64 Compose pytest 76 passed / no skips; tools/acceptance_test.py completed all production-image recovery/privacy assertions; tools/validate_release.py returned release_metadata_passed. GitHub Linux/Windows unit, broker, HACS and hassfest jobs passed. Detailed private evidence is retained outside Git.
 
-Docker Compose execution failed because the local Linux engine pipe does not exist. Full release validation correctly fails incomplete. A manifest's ARM64 entry is not startup evidence; a subprocess reconstruction is not container recreation. No acceptance checkbox is marked complete based on unexecuted code.
+Release source: ce2f19ecf99c2dc90d54a8a54e2a3ce30b27bc01. Built ARM64 image identity: sha256:e543a5ea5d8fe2597468d546d8fb01a24bc7f2b548349a8c41fb60d67084abd3. This local Docker content identity is not a registry RepoDigest. The release record retains lock/wheel hashes and the selected image metadata.
 
-Residual limits: synthetic Google fixtures are fabricated; no live compatibility test has occurred. MQTT source_timestamp is preserved, but HA's own last-update selection can change during retained replay; validate this with real HA before relying on source preference. The Pi and its administrators remain trusted, and privileged HA host code is outside a strong isolation guarantee.
+Fresh scope audit: no existing Compose/privilege/network/service changes; all three original container IDs/start times/restart counts/status and selected configuration fields unchanged. New private credential provisioning and persistent project start were blocked by automatic approval review, not executed. No real credential or owner location appears in public files. No reboot or HA auth/log/config inspection occurred.
+
+Remaining work after approval: provision/start/recreate only the new project; verify loopback bindings and original baseline again; let the owner import the Google session and configure HA MQTT/People. Full Pi reboot remains a separate optional authorization. Trusted-host and undocumented Google API limits remain; HA's own GPS-source update rules are not overridden.
