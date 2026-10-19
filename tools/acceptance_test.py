@@ -25,7 +25,7 @@ def wait(predicate, seconds=45):
         try:
             if predicate():
                 return
-        except (OSError, ValueError, KeyError):
+        except (OSError, ValueError, KeyError, subprocess.CalledProcessError):
             pass
         time.sleep(0.5)
     raise AssertionError("acceptance deadline expired")
@@ -85,6 +85,10 @@ bootstrap(Path('/acceptance/private'), 'synthetic-acceptance-admin')
     env_file.write_text(f'COLLECTOR_IMAGE={image_id}\nCOLLECTOR_PRIVATE_DIR={directory}/private\n')
     config = json.loads(command(['docker','compose','--env-file',str(env_file),'-f','deploy/compose.yaml','config','--format','json'],cwd=ROOT))
     config['name'] = PROJECT
+    for section in ('networks', 'secrets'):
+        for key, item in config.get(section, {}).items():
+            if 'name' in item:
+                item['name'] = PROJECT + '_' + key
     config['services']['collector']['entrypoint'] = ['python','/acceptance/runtime.py']
     config['services']['collector']['ports'][0]['published'] = '18787'
     config['services']['collector']['environment']['POLL_SECONDS'] = '15'
