@@ -1,6 +1,6 @@
 # Tracker: original integration, external session
 
-Status: IN_PROGRESS. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
+Status: COMPLETE. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
 
 | Task | Status |
 |---|---|
@@ -8,7 +8,7 @@ Status: IN_PROGRESS. Owner authorized implementation. Native source release: `86
 | 2 Scoped session data API | DONE |
 | 3 Original HA source/auth adapter | DONE |
 | 4 Actual HA equivalence/security tests and patch guard | DONE |
-| 5 ARM64 release, authorized rollout and migration handoff | IN_PROGRESS |
+| 5 ARM64 release, authorized rollout and migration handoff | DONE |
 
 Fresh evidence, 2026-10-19:
 
@@ -28,9 +28,19 @@ Deployment evidence, 2026-10-19:
 - A deployment verification script used the wrong profile attribute name; the application was healthy, but the checker triggered rollback. The old untagged image ID was unavailable. The tested collector was resumed, the probe corrected, and all aggregate verification passed. A verified rollback image was rebuilt from exact previous source `f5a05b9` and retained under a separate tag; the new image is tagged too. No unresolved outage remains. Matching encrypted pre-update data is retained privately.
 - New scoped key provisioned without reading existing credentials; encrypted owner handoff delivered to ignored owner-only local storage and its temporary decryption key removed.
 - Owner explicitly approved installing our fork and restarting only HA. Hash-checked native ZIP installed in the existing persistent `/config` bind mount; no previous component existed. One targeted HA restart completed. HA identity/network/privileges unchanged; Matter Server, OTBR and broker untouched. Frontend HTTP 200.
-- Real frontend opens the new external-session Google Maps flow. Owner signed into HA; account/address are populated, scoped key entry is pending privately. Never read or expose that password field.
+- Real frontend opens the new external-session Google Maps flow. Owner signed into HA and entered the scoped key privately. The supported flow completed with the original account-holder option enabled, maximum accuracy 1000 metres and update period 60 seconds. The key was never read from the form or printed.
 - Normal HA Compose pull/recreation retains the component in `/config`; the separate service and private state are independent. Future HA API compatibility is limited to the tested version and must be checked on upgrades.
 
-Exact next action: finish the supported native HA flow once the owner enters the key, verify real names/pictures/map and original options, privately review old-to-new Person/automation references, then switch only the collector to broker-free native mode if migration is accepted. Do not remove the broker or unrelated MQTT configuration. Push documentation/CI pin updates directly to owner main. See `docs/NATIVE_DEPLOYMENT_REVIEW.md`.
+Final live verification:
 
-No existing Compose file, mount, privilege, Thread permission, firewall, SSH or host-service changes and no reboot. Operational reports, account identity and credentials remain private. Task 5 remains IN_PROGRESS until live native setup and migration verification are complete.
+- Six native entities: five named trackers with coordinates and connectivity sensor on. Four shared-contact pictures successfully load in the browser; account picture/battery omissions follow upstream. HA map renders all five People.
+- Exact Google identity/hash mapping matched all five legacy trackers without ambiguity. Updated five People through supported HA API; preserved their other trackers, names and user associations. All five use native trackers as their current source.
+- HA indexed reference checks found no remaining references on 16 legacy entities. Seven available dashboard configurations had no legacy references; the default dashboard had no stored configuration. No direct dashboard rewrite was needed.
+- Disabled all 16 legacy entities through supported registry API, with private before/after snapshots for rollback. No `.storage` edits.
+- Switched only the collector to `deploy/compose.session.yaml`: legacy polling/publishing off, no MQTT credential mounted, existing encrypted session reused. Scoped native API and HA connectivity remain healthy. Broker, Matter Server and OTBR unchanged; HA had no further restart. No legacy entity states remain active.
+- Collector and Validate CI both pass at documentation/immutable HA-image-pin commit `d609978`; application source and installed package remain tested release `86f6983`.
+- Final selected-metadata check confirms all 12 installed files match the tested ZIP, native service is running with `unless-stopped`, its sole API port is loopback-only, and the HA component uses persistent configuration storage. The original permissions and other services remain preserved; HA frontend is healthy and a verified rollback image is retained. Final source guard, synthetic upstream update and release source metadata checks pass. No private account identity appears in tracked files.
+
+Exact next action: routine owner use. Keep release images, encrypted-state backup, private migration snapshots and disabled legacy entities during rollback retention. Broker/discovery removal is optional and needs applicable authorization; do not remove unrelated MQTT configuration. Audit requested upstream updates using `docs/UPSTREAM_UPDATES.md`. Future HA upgrades retain installation through persistent `/config` but require version compatibility checks. No required implementation or migration action remains.
+
+No existing Compose file, mount, privilege, Thread permission, firewall, SSH or host-service changes and no reboot. Operational reports, account identity and credentials remain private. One explicitly approved targeted HA restart was performed.

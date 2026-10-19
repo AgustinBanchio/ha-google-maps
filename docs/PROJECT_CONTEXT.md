@@ -22,9 +22,9 @@ Retrieve locations already shared with the owner's personal Google Maps account 
 
 The original HA integration implements person/location reporting and tracking behaviour. Google credential/session handling is externalized through a narrow source adapter. Five protected upstream files and the external service's vendored Maps client match the audited baseline; the documented patch boundary identifies each changed integration file.
 
-The scoped loopback API returns original upstream observations before HA filtering. HA stores only its separate location-data access key and account identity. The external encrypted store/import UI and operations tooling remain responsible for Google cookies. The native component and tested ARM64 service are deployed; supported HA setup and migration checks are tracked separately.
+The scoped loopback API returns original upstream observations before HA filtering. HA stores only its separate location-data access key and account identity. The external encrypted store/import UI and operations tooling remain responsible for Google cookies. The native component and tested ARM64 service are deployed; supported HA setup, pictures, map and five Person migrations are verified.
 
-MQTT publishing remains temporarily available for the existing installation. Its platform identities do not transfer automatically to native Google Maps entities. Verify People/automation references before retiring it. See [course correction](COURSE_CORRECTION.md), [native setup](NATIVE_SETUP.md) and the active tracker.
+Legacy MQTT publishing is disabled. Its five tracker identities were matched exactly to native Google identities, Person links migrated through HA's supported API, and all 16 legacy entities disabled. The broker remains unchanged for rollback. See [course correction](COURSE_CORRECTION.md), [native setup](NATIVE_SETUP.md) and the active tracker.
 
 ## Security judgement
 

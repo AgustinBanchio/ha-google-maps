@@ -2,7 +2,7 @@
 
 This fork uses the original Google Maps HA tracker and connectivity sensor, options, names, pictures, attributes and location-selection policy. Google cookies are imported only into the separate session service. HA receives a separate scoped location-data key; it cannot use that key to upload/export cookies or access management.
 
-The owner deployment has the tested service and our custom component installed. HA was restarted once with explicit approval. The component is in the persistent `/config/custom_components/google_maps` mount, not in the container image.
+The owner deployment is configured and verified: five native trackers with coordinates, four shared-contact pictures and five People using their native trackers. The service runs in native-only mode; 16 legacy MQTT entities are disabled and the broker remains intact for rollback. HA was restarted once with explicit approval. The component is in the persistent `/config/custom_components/google_maps` mount, not in the container image.
 
 ## Add Google Maps
 

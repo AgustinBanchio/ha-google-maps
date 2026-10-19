@@ -2,6 +2,14 @@
 
 Use only the separate google-maps-collector Compose project. Deployment, targeted changes and full Pi reboot require the applicable owner authorization. Do not restart HA, OTBR, Matter, SSH, tunnels or host services as a recovery shortcut.
 
+## Native deployment
+
+Use `deploy/compose.session.yaml` and the existing private environment file for the active native-only service. Its assigned store key, encrypted session, admin verifier and data token persist outside the container; it does not mount the old MQTT password. Never rerun bootstrap against existing secrets. HA retains our component and scoped connection configuration in persistent `/config` during normal HA Compose pull/recreation. See [native setup](NATIVE_SETUP.md) for update compatibility.
+
+Native network/parser failures are retried on HA's configured update schedule; original HA tracker rules retain valid last-known fixes. Import revoked/expired Google sessions through the external management UI. Cookie replacements and API requests share one serialized writer. Management browser sessions do not survive service recreation, while Google session storage does.
+
+Keep tagged current and rollback images, matching encrypted state backup and private HA migration snapshots. Rollback to MQTT also requires restoring Person tracker selections and re-enabling the disabled legacy entities through supported HA APIs. See [deployment rollback](NATIVE_DEPLOYMENT_REVIEW.md). The broker remains running for this retention period. The sections below describe the former MQTT mode and its recovery checks.
+
 ## Normal restart
 
 Collector recreation reuses the assigned key, encrypted session, source timestamps, broker password files and persistent broker data. Management login sessions are intentionally lost. Reopen the SSH tunnel and sign in again; Google cookies should not need another import. Startup fails closed when the key/store cannot be read or authenticated.

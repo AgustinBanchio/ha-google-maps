@@ -11,7 +11,7 @@ Read in order:
 5. [Upstream patch boundary](docs/UPSTREAM_PATCH.md) and [update procedure](docs/UPSTREAM_UPDATES.md).
 6. [Security context](docs/PROJECT_CONTEXT.md) and [operations](docs/OPERATIONS.md).
 
-Native implementation and actual HA/ARM64 tests pass. The session API is deployed, and our native component is installed in HA's persistent configuration mount after one explicitly approved targeted HA restart. Existing HA Compose, privileges, Matter Server and OTBR remain unchanged. The previous MQTT path remains available during configuration/migration; do not retire it before native People/automation links are verified.
+Native implementation and actual HA/ARM64 tests pass. The session API is deployed, and our native component is installed in HA's persistent configuration mount after one explicitly approved targeted HA restart. Existing HA Compose, privileges, Matter Server and OTBR remain unchanged. The native setup and migration are verified: five native trackers, four profile pictures and five People linked to their native source. Legacy MQTT publishing is off and its 16 entities are disabled; its broker remains running unchanged for rollback.
 
 The original README describes upstream behaviour. [NEXT_STEPS](docs/NEXT_STEPS.md) describes this fork's setup. Earlier isolated-collector specifications and MQTT setup documents are historical transition material; they are not the final architecture.
 

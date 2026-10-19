@@ -1,6 +1,6 @@
 # Course correction: preserve upstream, isolate Google authentication
 
-19 October 2026. Approved and implemented after the owner explicitly requested the changes. The native adapter/API and tests now exist; the tested session API is deployed and our native component is installed. MQTT remains during migration. The findings below explain the correction; use the active tracker for current evidence.
+19 October 2026. Approved and implemented after the owner explicitly requested the changes. The native adapter/API and tests now exist; the tested session API is deployed and our native component is installed. Native setup and Person migration are verified; legacy publishing is off and its entities are disabled. The broker remains for rollback. The findings below explain the correction; use the active tracker for current evidence.
 
 ## Objective and finding
 
@@ -65,4 +65,4 @@ Installing/restarting HA, changing its mounts/permissions, stopping the producti
 
 ## Current next step
 
-Complete native setup through HA's supported flow and verify real tracker presentation and People/automation links before retiring MQTT. See the active upstream-session-adapter tracker. Source guards, seven actual HA runtime scenarios and ARM64 API/recovery tests pass. Preserve direct pushes to the owner's fork without PRs and audit upstream updates explicitly.
+Native setup, frontend/map checks and five Person links are verified. Legacy publishing is disabled; the collector uses the native-only Compose file. Keep the broker and disabled old entities until rollback retention is no longer needed. See the active upstream-session-adapter tracker. Source guards, seven actual HA runtime scenarios and ARM64 API/recovery tests pass. Preserve direct pushes to the owner's fork without PRs and audit upstream updates explicitly.

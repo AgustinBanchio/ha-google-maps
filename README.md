@@ -1,6 +1,6 @@
 # <img src="https://brands.home-assistant.io/google_maps/icon.png" alt="Google Maps" width="50" height="50"/> Google Maps
 
-> **Fork status:** The original integration runtime is unchanged. A separate collector is planned to keep Google credentials out of HA. Start with [START_HERE.md](START_HERE.md) for the specification, plan, audit and next steps. The collector has not been implemented or deployed.
+> **This fork:** The original HA tracker and options now use a separate Google session service. Google cookies stay outside HA; HA uses a scoped location-data key. Follow [Native setup](docs/NATIVE_SETUP.md) and [START_HERE.md](START_HERE.md). The upstream documentation below describes original behaviour; its cookie-upload setup has been replaced in this fork.
 
 
 This is a custom version of the Home Assistant built-in [Google Maps](https://www.home-assistant.io/integrations/google_maps/) integration.

@@ -1,3 +1,5 @@
+> Current native setup: use [NATIVE_SETUP.md](NATIVE_SETUP.md). The MQTT instructions below are retained for the previous transition deployment and rollback; the owner now runs the native integration.
+
 # Set up the isolated collector
 
 Local implementation, ARM64 container recovery and release checks pass. Real Google compatibility remains an owner session-import check. Check the current tracker for observed results. These instructions do not authorize Pi changes.
