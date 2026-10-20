@@ -65,14 +65,17 @@ main()
 '''
 
 
-def run(directory, build=True):
+def run(directory, build=True, platform=None):
     assert directory.is_absolute() and not directory.exists()
     directory.mkdir(mode=0o700, parents=True)
     revision = command(['git', 'rev-parse', 'HEAD'], cwd=ROOT)
     if build:
-        subprocess.run(['docker', 'build', '-f', 'deploy/Dockerfile', '--build-arg',
+        subprocess.run(['docker', 'build', *(['--platform', platform] if platform else []), '-f', 'deploy/Dockerfile', '--build-arg',
             'SOURCE_REVISION=' + revision, '-t', IMAGE, '.'], cwd=ROOT, check=True)
     image_id = command(['docker', 'image', 'inspect', '--format', '{{.Id}}', IMAGE])
+    architecture = command(['docker', 'image', 'inspect', '--format', '{{.Architecture}}', image_id])
+    if platform:
+        assert architecture == platform.split('/')[1]
     # Only this newly created synthetic directory is mounted for provisioning.
     bootstrap = """from pathlib import Path
 import sys
@@ -225,7 +228,7 @@ print(json.dumps(data))
         # Inspect selected fields, never dump container environments.
         selected=command(compose+['exec','-T','collector','python','-c','import os;print(os.getuid())'])
         assert selected=='10001'
-        result={'passed':events,'source_revision':revision,'image_id':image_id,'architecture':'arm64'}
+        result={'passed':events,'source_revision':revision,'image_id':image_id,'architecture':architecture}
         (directory/'result.json').write_text(json.dumps(result,indent=2))
         print(json.dumps(result))
     finally:
@@ -236,5 +239,6 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory',required=True,type=Path)
     parser.add_argument('--no-build',action='store_true')
+    parser.add_argument('--platform', choices=['linux/amd64', 'linux/arm64'])
     args=parser.parse_args()
-    run(args.directory,args.no_build is False)
+    run(args.directory,args.no_build is False,args.platform)

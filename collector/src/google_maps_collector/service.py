@@ -11,6 +11,7 @@ from .google_maps import (
     NetworkFailure, Person, filter_cookies,
 )
 from .store import EncryptedStore, StoreError
+from .diagnostics import Diagnostics, cookie_changes
 
 COOKIE_FIELDS = ("version", "name", "value", "port", "port_specified", "domain",
     "domain_specified", "domain_initial_dot", "path", "path_specified", "secure",
@@ -62,6 +63,7 @@ class Service:
                     self.credential_required = False
             except (KeyError, TypeError, ValueError, GoogleError):
                 raise StoreError() from None
+        self.diagnostics = Diagnostics(store.path.with_name("diagnostics.json"), clock)
         self._refresh_view()
 
     def _document(self, cookies, people, present, now, missing_since=None):
@@ -73,6 +75,7 @@ class Service:
             "missing_since": self.missing_since if missing_since is None else missing_since}
 
     def _validate_and_save(self, candidate):
+        before = filter_cookies(candidate)
         incoming, rotated = self.google.poll(candidate)
         now = self.clock()
         updated = dict(self.people)
@@ -107,15 +110,17 @@ class Service:
         self.credential_required = False
         self.failures = 0
         self._refresh_view()
+        return cookie_changes(before, rotated)
 
     def upstream_observations(self):
         """One cookie owner; native HA receives upstream records BEFORE HA policy."""
         from dataclasses import asdict
         from .upstream import REVISION
         with self.lock:
-            if not len(self.cookies):
-                raise InvalidSession()
             try:
+                if not len(self.cookies):
+                    raise InvalidSession()
+                before = filter_cookies(self.cookies)
                 observations, rotated = self.google.poll_upstream(self.cookies)
                 now = self.clock()
                 # Persist rotation without running the legacy MQTT location policy.
@@ -129,49 +134,63 @@ class Service:
                 self._refresh_view()
                 self._management = {**self._management,
                     "contact_count": len(observations.people) + int(observations.account is not None)}
+                self.diagnostics.record("native_poll", changes=cookie_changes(before, rotated))
                 return {"schema": 1, "upstream_revision": REVISION,
                     "people": [asdict(person) for person in observations.people],
                     "account": asdict(observations.account) if observations.account else None,
                     "cookie_expiration": observations.expiration.isoformat() if observations.expiration else None}
-            except InvalidSession:
+            except InvalidSession as error:
                 self.session_valid = False
                 self.credential_required = True
                 self.status = "credential_required"
                 self._refresh_view()
+                self.diagnostics.record("native_poll", error=error)
                 raise
             except (NetworkFailure, InvalidData, StoreError) as error:
                 self.status = ("storage_error" if isinstance(error, StoreError) else
                     "network_failure" if isinstance(error, NetworkFailure) else "parser_failure")
                 self._refresh_view()
+                self.diagnostics.record("native_poll", error=error)
                 raise
 
     def import_cookies(self, candidate):
         with self.lock:
             # Failed validation or persistence leaves the prior active session intact.
-            self._validate_and_save(candidate)
+            try:
+                changes = self._validate_and_save(candidate)
+            except (GoogleError, StoreError) as error:
+                self.diagnostics.record("session_import", error=error)
+                raise
+            self.diagnostics.record("session_import", changes=changes)
 
     def poll(self):
         with self.lock:
             if not len(self.cookies):
                 self.status = "credential_required"
                 self._refresh_view()
+                self.diagnostics.record("legacy_poll", error=InvalidSession())
                 return
             try:
-                self._validate_and_save(self.cookies)
-            except InvalidSession:
+                changes = self._validate_and_save(self.cookies)
+                self.diagnostics.record("legacy_poll", changes=changes)
+            except InvalidSession as error:
                 self.session_valid = False
                 self.credential_required = True
                 self.status = "credential_required"
                 self.failures += 1
-            except NetworkFailure:
+                self.diagnostics.record("legacy_poll", error=error)
+            except NetworkFailure as error:
                 self.status = "credential_required" if self.credential_required else "network_failure"
                 self.failures += 1
-            except GoogleError:
+                self.diagnostics.record("legacy_poll", error=error)
+            except GoogleError as error:
                 self.status = "credential_required" if self.credential_required else "parser_failure"
                 self.failures += 1
-            except StoreError:
+                self.diagnostics.record("legacy_poll", error=error)
+            except StoreError as error:
                 self.status = "storage_error"
                 self.failures += 1
+                self.diagnostics.record("legacy_poll", error=error)
             self._refresh_view()
 
     @property
@@ -206,4 +225,4 @@ class Service:
                      or 0 <= now - p.source_timestamp < self.config.freshness_seconds))}
 
     def management_status(self):
-        return dict(self._management)
+        return {**self._management, "diagnostics": self.diagnostics.snapshot()}

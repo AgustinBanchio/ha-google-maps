@@ -27,6 +27,8 @@ Tested HA version: 2026.10.1. A future HA release can change custom-integration 
 
 ## Session replacement
 
+For authentication failures, first check the private collector's [diagnostics](DIAGNOSTICS.md). Its last source failure distinguishes Google's invalid-session marker, HTTP rejection/redirect, transport errors and storage errors from a rejected HA data key. Evidence is retained after recovery without exposing credentials or Google response data.
+
 Open the private management tunnel using `tools/Open-CollectorTunnel.ps1` and import a renewed Google cookie export at the external service. Reload Google Maps or retry its reauthentication flow after the service reports ready. Google cookies must never be pasted into HA's data access key field. See [Chrome export instructions](COOKIE_IMPORT.md).
 
 A legacy cookie-based native installation is migrated without reading or deleting its old cookie file. Reconfigure the source and remove/revoke obsolete HA cookie copies privately after verifying the external session. The owner's former MQTT-only installation did not put Google cookies in HA.

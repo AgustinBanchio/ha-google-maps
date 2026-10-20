@@ -2,6 +2,15 @@
 
 Status: COMPLETE. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
 
+
+## 2026-10-20 diagnostics maintenance: IN_PROGRESS
+
+Owner renewed the session and requested logging. Supplied status reported credential_required with an approximate future cookie expiry; this establishes a source-authentication failure, not its underlying cause. No credential files or raw logs were read. A requested management tunnel opened successfully after an earlier read-only SSH attempt failed at the desktop agent.
+
+Implemented maintenance checkpoint: transport reasons, independent last-source-failure metadata, 32-event persistent allowlisted history, isolated JSON logging, management UI with refresh, and a read-only metadata CLI exist. The original source/wire/authentication contracts remain unchanged. Local suite: 134 passed, 2 broker skips. Disposable Linux Docker broker suite: 136 passed. Source guard, synthetic upstream update and source metadata checks pass. Synthetic browser UI login/diagnostics/recovery display verified. Actual Requests Set-Cookie extraction and encrypted rotation continuity are tested. Broken logging streams cannot emit surrounding exception context; optional metadata write failures do not interrupt tracking. One existing Starlette warning remains.
+
+Release acceptance tooling now records the observed image architecture instead of a hardcoded arm64 label, and accepts an explicit test platform. Exact next maintenance action: commit/push, run local ARM64 image/container recovery and CI, then prepare a concrete collector-only rollout/rollback. No production diagnostics deployment or HA restart has occurred.
+
 | Task | Status |
 |---|---|
 | 1 Upstream client and transport wrapper | DONE |

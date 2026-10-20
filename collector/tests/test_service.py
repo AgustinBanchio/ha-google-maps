@@ -128,7 +128,7 @@ def test_management_has_only_permitted_fields(setup):
     service, _, _ = setup
     service.import_cookies(parse_cookies(COOKIE))
     assert set(service.management_status()) == {"session_status", "last_successful_poll",
-        "contact_count", "approximate_cookie_expiry"}
+        "contact_count", "approximate_cookie_expiry", "diagnostics"}
     assert "SYNTHETIC_SECRET" not in str(service.management_status())
 
 
@@ -204,7 +204,7 @@ def test_old_store_migration_and_name_only_poll_preserve_fix(setup):
     assert current.source_timestamp == original.source_timestamp
     restored = Service(service.config, service.store, google, lambda: now[0])
     assert restored.people["synthetic"].display_name == "Synthetic Alice"
-    assert set(restored.management_status()) == {"session_status", "last_successful_poll", "contact_count", "approximate_cookie_expiry"}
+    assert set(restored.management_status()) == {"session_status", "last_successful_poll", "contact_count", "approximate_cookie_expiry", "diagnostics"}
 
 
 def test_older_metadata_does_not_replace_location_address(setup):

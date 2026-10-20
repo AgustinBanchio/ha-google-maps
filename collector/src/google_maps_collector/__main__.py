@@ -39,11 +39,14 @@ def environment_config():
 
 async def run(config):
     import uvicorn
+    from .diagnostics import configure_logging
     from .google_maps import GoogleMaps
     from .mqtt import MQTT
     from .service import Service
     from .store import EncryptedStore
     from .web import create_app
+
+    configure_logging()
 
     # Uvicorn must never write request exception tracebacks or access URLs.
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
@@ -106,9 +109,15 @@ async def run(config):
 def main() -> None:
     parser = argparse.ArgumentParser(description="Isolated Google Maps collector")
     parser.add_argument("--version", action="version", version=__version__)
-    parser.add_argument("--healthcheck", action="store_true", help="check the local management listener")
+    operation = parser.add_mutually_exclusive_group()
+    operation.add_argument("--healthcheck", action="store_true", help="check the local management listener")
+    operation.add_argument("--diagnostics", action="store_true", help="print only validated operational metadata; never read Google credentials")
     args = parser.parse_args()
     try:
+        if args.diagnostics:
+            from .diagnostics import Diagnostics
+            print(json.dumps(Diagnostics(environment_config().store_file.with_name("diagnostics.json")).snapshot()))
+            return
         if args.healthcheck:
             from urllib.request import ProxyHandler, build_opener
             with build_opener(ProxyHandler({})).open(environment_config().management_origin + "/", timeout=3) as response:

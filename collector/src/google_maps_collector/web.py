@@ -20,6 +20,7 @@ from starlette.routing import Route
 
 from .google_maps import GoogleError, InvalidSession, InvalidData, NetworkFailure, parse_cookies
 from .store import StoreError
+from .diagnostics import Reason
 
 SESSION_SECONDS = 3600
 
@@ -173,6 +174,8 @@ def create_app(service, config, verifier, clock=time.monotonic):
         supplied = request.headers.getlist("authorization")
         if (not expected or not 32 <= len(expected) <= 256 or len(supplied) != 1
                 or not hmac.compare_digest(supplied[0].encode(), ("Bearer " + expected).encode())):
+            if diagnostics := getattr(service, "diagnostics", None):
+                await run_in_threadpool(diagnostics.record, "data_auth", error=InvalidSession(Reason.DATA_KEY, 401))
             raise HTTPException(401)
         if request.query_params or request.method != "GET":
             raise HTTPException(400)

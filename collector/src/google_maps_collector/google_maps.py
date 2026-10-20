@@ -16,7 +16,10 @@ MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 class GoogleError(Exception):
     """A fixed public code, never a response, URL or transport exception."""
 
-    def __init__(self):
+    def __init__(self, reason=None, http_status=None):
+        from .diagnostics import Reason
+        self.reason = reason if isinstance(reason, Reason) else None
+        self.http_status = http_status if type(http_status) is int and 100 <= http_status <= 599 else None
         super().__init__(self.__class__.__name__)
 
 
