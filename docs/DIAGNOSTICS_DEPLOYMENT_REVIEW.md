@@ -13,7 +13,9 @@ Verified evidence:
 - Synthetic browser management login, retained failure/recovery display and refresh button work.
 - Read-only Pi preflight: current collector healthy; tagged prior image verified; a separate source checkout and four-container protection baseline prepared. No production change yet.
 
-## Authorized change to request
+## Authorized change
+
+Owner explicitly approved this collector-only deployment on 2026-10-20. It is now executed and verified; the procedure below records its scope.
 
 Build from this exact source and the existing pinned Docker base images, then replace only the separate native-only collector. Use the existing private environment and data mount. Keep Google cookies, encryption key, management verifier and HA data key unchanged. This requires one collector replacement, which clears management-browser login sessions but preserves the Google session. HA needs no restart or component update.
 
@@ -28,3 +30,11 @@ Build from this exact source and the existing pinned Docker base images, then re
 Stop only the new collector, restore the prior image environment/reference and recreate only the collector. The encrypted format is unchanged: retain the newest Google session by default. Restore the matching encrypted data backup only if storage corruption/incompatibility requires it, preserving the failed directory separately. The old release ignores the new independent diagnostics file. Verify health and the protected-container baseline.
 
 HA, broker, Matter Server, OTBR, existing Compose permissions, SSH, tunnel and host services are outside this change. No reboot.
+
+## Executed evidence, 2026-10-20
+
+The exact source was built on the Pi as ARM64 image `sha256:fdbef26546ac1d39d6449d30653daeb28323fb0f456451826d7f0b9e41565151`. All six isolated actual-image acceptance groups and release validation passed before replacement. A missing synthetic fixture image caused the first pre-production test attempt to fail; building it resolved the prerequisite without a release-source change.
+
+Only the collector was replaced. Existing session and keys were reused; the previous image/environment and encrypted-state backup are retained privately. Health, diagnostics UI, metadata CLI, non-root/read-only/restart/loopback settings and the four protected-container baseline passed verification. No HA, broker, Matter Server or OTBR restart, existing Compose permission change or reboot occurred.
+
+A subsequent live native poll succeeded and saved two cookie changes. The separate metadata-only CLI read the persisted success event; no source failure has been recorded since deployment. The requested local tunnel returned HTTP 200. The historical rejection predates this diagnostics release and cannot be reconstructed. Fresh focused tests: 24 passed; upstream guard and source metadata checks passed. See [verification](specs/current/2026-10-19-upstream-session-adapter/verification.md).

@@ -15,4 +15,6 @@ Native implementation and actual HA/ARM64 tests pass. The session API is deploye
 
 The original README describes upstream behaviour. [NEXT_STEPS](docs/NEXT_STEPS.md) describes this fork's setup. Earlier isolated-collector specifications and MQTT setup documents are historical transition material; they are not the final architecture.
 
+The collector diagnostics release is deployed and verified as of 2026-10-20, with a successful live native poll and saved cookie rotation. The authenticated collector page retains safe failure metadata under Diagnostics; see [diagnostics](docs/DIAGNOSTICS.md) and [deployment evidence](docs/DIAGNOSTICS_DEPLOYMENT_REVIEW.md). HA and the other services were not restarted for this update.
+
 Push directly to the owner's main branch without PRs. Preserve the upstream remote and audited baseline. No automatic upstream merge or unattended deployment. Never commit credentials, account/contact/location data, raw host reports or private infrastructure configuration. Ignored `.local/` holds private operational files; fresh clones do not contain them.
