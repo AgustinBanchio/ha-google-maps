@@ -181,7 +181,7 @@ print(json.dumps(data))
         assert tracker_config['entity_picture']==location['entity_picture']
         assert json.loads(initial[f'google_maps_collector/{identity}/details'])['last_seen']==location['last_seen']
         assert native_state()['people'][0]['full_name']=='Synthetic Acceptance'
-        events.append('synthetic import, native data API and ARM64 non-root startup passed')
+        events.append(f'synthetic import, native data API and {architecture} non-root startup passed')
         before=command(compose+['exec','-T','collector','python','-c',
             "from pathlib import Path;import hashlib;print(hashlib.sha256(Path('/run/secrets/store-key').read_bytes()).hexdigest())"])
         subprocess.run(compose+['restart','broker'],check=True)
@@ -206,6 +206,8 @@ print(json.dumps(data))
             from urllib.error import HTTPError
             assert isinstance(error,HTTPError) and error.code==400
         assert status()['session_status']=='ready'
+        failure = status()['diagnostics']['last_source_failure']
+        assert failure['operation']=='session_import' and failure['reason']=='google_session_required'
         state['reject']=False;state['now']+=901;save_control()
         wait(lambda: broker_state().get(f'google_maps_collector/{identity}/availability')=='offline')
         events.append('rejected replacement and independent stale-fix availability passed')
@@ -224,6 +226,15 @@ print(json.dumps(data))
         native=native_state()
         assert native['people'][0]['last_seen']==round(source*1000)/1000
         assert native['people'][0]['battery_level']==42
+        csrf=login()
+        diagnostic=status()['diagnostics']
+        assert diagnostic['last_source_failure']==failure
+        assert diagnostic['last_success']['operation']=='native_poll'
+        assert diagnostic['persistence_available'] and len(diagnostic['events'])<=32
+        selected_diagnostics=json.loads(command(compose+['exec','-T','collector','python','-m','google_maps_collector','--diagnostics']))
+        assert selected_diagnostics['last_source_failure']==failure
+        assert not any(text in json.dumps(selected_diagnostics) for text in ('SYNTHETIC_SECRET','synthetic-acceptance-person','Synthetic address'))
+        events.append('bounded diagnostics survive recovery/recreation and metadata-only CLI excludes canaries')
         events.append('native-only request-driven data survives recreation with broker stopped')
         # Inspect selected fields, never dump container environments.
         selected=command(compose+['exec','-T','collector','python','-c','import os;print(os.getuid())'])
