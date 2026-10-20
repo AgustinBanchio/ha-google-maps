@@ -11,6 +11,8 @@ Implemented maintenance checkpoint: transport reasons, independent last-source-f
 
 Release acceptance tooling now records the observed image architecture instead of a hardcoded arm64 label, and accepts an explicit test platform. Exact next maintenance action: commit/push, run local ARM64 image/container recovery and CI, then prepare a concrete collector-only rollout/rollback. No production diagnostics deployment or HA restart has occurred.
 
+Release checkpoint: implementation and native ARM64 CI/recovery coverage are pushed directly to owner main (`b211f7c`, `ce0c2bf`). Local Docker cannot execute ARM64 (exec-format error); native ARM64 GitHub CI passes all six acceptance groups instead. Collector and Validate both pass at `ce0c2bf`, including Windows/Linux unit, both broker architectures and actual HA runtime. Synthetic browser refresh verified. Demo services/containers were removed. Read-only Pi preflight confirms the existing collector healthy and rollback image tagged; a separate exact source checkout and fresh four-container protection baseline are prepared. Exact next maintenance action: obtain applicable collector-only rollout authorization against `docs/DIAGNOSTICS_DEPLOYMENT_REVIEW.md`, then build/replace only collector and verify allowlisted metadata and protected baseline. No production changes yet.
+
 | Task | Status |
 |---|---|
 | 1 Upstream client and transport wrapper | DONE |
