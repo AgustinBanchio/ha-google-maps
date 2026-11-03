@@ -2,6 +2,12 @@
 
 Status: COMPLETE. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
 
+## 2026-11-03 upstream status check: COMPLETE
+
+GitHub comparison reports upstream `main` identical to audited `b2132123d46c47e5761d5d91cc08ca6b712fe6c1`; latest published release remains 2.0.3 (4 June 2026). New open maintainer PR #62 (30 October), reviewed at `7b77fd27cab1aa779269893320c738a0d3a85104`, contains a battery-level deprecation fix, recorder exclusions and HA 2026.7 minimum/metadata/typing changes. Its proposed separate sensors are not implemented. Older open PR #52 adds dynamic polling but needs finite/bounded interval validation and correct unavailable-state fallback before adoption. Full changed-file patches were inspected; neither PR was applied. Local protected-source guard passed for five modules and the identical vendored client. No runtime tests of either candidate or live host inspection occurred. See [assessment](../../../audits/2026-11-03-upstream-status/REVIEW.md).
+
+Exact next action: retain the current release and recheck #62 when it changes or merges; perform a pinned, scoped compatibility port only if the owner requests implementation, following `docs/UPSTREAM_UPDATES.md`. No code port or deployment is pending from this check.
+
 
 ## 2026-10-20 diagnostics maintenance: COMPLETE
 
