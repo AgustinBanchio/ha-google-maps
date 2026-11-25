@@ -2,6 +2,18 @@
 
 Status: COMPLETE. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
 
+## 2026-11-25 upstream status check
+
+Upstream published [2.1.0](https://github.com/pnbruckner/ha-google-maps/releases/tag/2.1.0) on 9 November at `ae85b249b354c25c2994cd1458231039e1dc977f`. GitHub reports that upstream `main` matches the tag. It is two commits and 13 changed files ahead of our audited `b2132123d46c47e5761d5d91cc08ca6b712fe6c1`. Reviewed the complete [merged #62 patch](https://github.com/pnbruckner/ha-google-maps/commit/338f975a282bda1cf5a7aca765f69418c619ae25) and tag's version bump. Dynamic polling [PR #52](https://github.com/pnbruckner/ha-google-maps/pull/52) remains open at the previously reviewed head.
+
+- Prioritize moving tracker `battery_level` to `extra_state_attributes` under the same key. Our tracker still overrides the deprecated property, which [Home Assistant Core](https://github.com/home-assistant/core/blob/2026.10.1/homeassistant/components/device_tracker/entity.py) says will be unsupported in 2027.7. Preserve existing recorder behavior and tracker identities in the compatibility patch.
+- Upstream now ships battery, address, GPS accuracy, last-seen and location-age sensors. Battery is enabled by default. The location sensors use raw observations and can differ from the filtered tracker. The new registry handling splits sensor IDs on every hyphen, which can truncate a hyphenated account ID after reload. Review sensor lifecycle and recorder effects before adopting these features.
+- Upstream also raises its HA minimum to 2026.7, changes config flow reload handling and adds an explicit polling preference branch. Our tested HA 2026.10.1 coordinator already skips scheduled refreshes when polling is disabled. The embedded Maps client only changes its cached-property import and drops postponed annotations. Google requests, cookie handling and parsing are unchanged in that client diff. A full baseline advance would require pinning `propcache` for the standalone collector and coordinating the revision check on both sides of the API.
+
+The protected-source guard passed for the five pinned modules and identical vendored client. This was a static assessment. No candidate runtime tests or live host checks were performed.
+
+Exact next action if the owner requests implementation: prepare a scoped battery compatibility patch from the pinned upstream diff on a review branch, and verify that actual HA maintains the tracker IDs and battery state attributes before preparing a rollout. Follow [the upstream update procedure](../../../UPSTREAM_UPDATES.md). The released fork continues to use its audited 2.0.3 baseline.
+
 ## 2026-11-03 upstream status check: COMPLETE
 
 GitHub comparison reports upstream `main` identical to audited `b2132123d46c47e5761d5d91cc08ca6b712fe6c1`; latest published release remains 2.0.3 (4 June 2026). New open maintainer PR #62 (30 October), reviewed at `7b77fd27cab1aa779269893320c738a0d3a85104`, contains a battery-level deprecation fix, recorder exclusions and HA 2026.7 minimum/metadata/typing changes. Its proposed separate sensors are not implemented. Older open PR #52 adds dynamic polling but needs finite/bounded interval validation and correct unavailable-state fallback before adoption. Full changed-file patches were inspected; neither PR was applied. Local protected-source guard passed for five modules and the identical vendored client. No runtime tests of either candidate or live host inspection occurred. See [assessment](../../../audits/2026-11-03-upstream-status/REVIEW.md).
