@@ -8,7 +8,11 @@ The owner requested the full upstream release with the fork's existing cookie ha
 
 Implementation `2df228010e2cf37da01c4c32864800ae2fb7c97b` is pushed to owner main. The protected-source guard, synthetic upstream update and verified 13-file native ZIP passed. There were 11 passing actual HA scenarios, 134 passing Windows collector tests with two broker skips and 136 passing Linux broker tests on both architectures. The exact implementation passed both [Collector](https://github.com/AgustinBanchio/ha-google-maps/actions/runs/45522756724) and [Validate](https://github.com/AgustinBanchio/ha-google-maps/actions/runs/45522756600). All six production-image acceptance groups passed on native ARM64. The deployed collector source wrote a synthetic session, 2.1.0 read it and persisted rotation, and the previous source reopened the updated state using the same keys.
 
-Exact next action after deployment approval: stage the checked native ZIP and build and verify the ARM64 collector image from the tested commit. Reuse the existing encrypted state and keys, upgrade both components together and verify tracking after one targeted HA restart. See the [audit and paired rollout/rollback procedure](../../../audits/2026-11-25-upstream-2.1.0/REVIEW.md). No Pi service changes were made.
+Deployment complete, 2026-11-25. The owner approved the paired rollout. The Pi verified all six ARM64 production-image acceptance groups and release packaging for image `sha256:5b8897f47e9166c28b969f3006c726d90d19ed4ee1b3e4a960e4febae56ec6df`. All 11 synthetic runtime tests also passed on the Pi's actual HA 2026.11.3 image. Replaced the collector and installed the verified 13-file HA component `2.1.0.post1` in the existing persistent mount. HA restarted once. The broker, Matter Server and OTBR retained their identity and start/restart metadata.
+
+Live acceptance passed with five existing trackers reporting coordinates, five original People links and the integration's connectivity sensor on. The five battery sensors were enabled with four readings. Address, GPS accuracy, last seen and location age sensors were registered and disabled by default. The existing encrypted state and data key supported a fresh native poll that saved two cookie changes.
+
+Exact next action: routine use. Retain the prior collector image, native component and encrypted state snapshot for paired rollback. [Rollout evidence and rollback procedure](../../../audits/2026-11-25-upstream-2.1.0/REVIEW.md).
 
 ## 2026-11-25 upstream status check
 

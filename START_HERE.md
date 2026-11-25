@@ -17,6 +17,6 @@ The original README describes upstream behaviour. [NEXT_STEPS](docs/NEXT_STEPS.m
 
 The collector diagnostics release is deployed and verified as of 2026-10-20, with a successful live native poll and saved cookie rotation. The authenticated collector page retains safe failure metadata under Diagnostics; see [diagnostics](docs/DIAGNOSTICS.md) and [deployment evidence](docs/DIAGNOSTICS_DEPLOYMENT_REVIEW.md). HA and the other services were not restarted for this update.
 
-The 2.1.0 update requires a coordinated collector and custom component upgrade. See the [2.1.0 audit and rollout](docs/audits/2026-11-25-upstream-2.1.0/REVIEW.md) for verification and rollback. The owner deployment evidence above is for the existing 2.0.3-based installation.
+The owner deployment now runs the 2.1.0-based collector and native component on HA 2026.11.3. The paired rollout reused the encrypted Google session and scoped data key. All five native trackers and People links passed live verification. See the [2.1.0 audit and rollout](docs/audits/2026-11-25-upstream-2.1.0/REVIEW.md) for the installed image and rollback evidence.
 
 Push directly to the owner's main branch without PRs. Preserve the upstream remote and audited baseline. No automatic upstream merge or unattended deployment. Never commit credentials, account/contact/location data, raw host reports or private infrastructure configuration. Ignored `.local/` holds private operational files; fresh clones do not contain them.
