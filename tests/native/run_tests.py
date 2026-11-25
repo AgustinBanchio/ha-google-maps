@@ -5,7 +5,7 @@ No HA production mounts, host network, Google credentials or external IO.
 import asyncio
 from copy import deepcopy
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import json
 import os
 import inspect
@@ -23,9 +23,14 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntries, ConfigEntry
 from homeassistant.setup import async_setup_component
 from homeassistant import loader
 from homeassistant.helpers import entity_registry as er, device_registry as dr, issue_registry as ir, area_registry as ar
+from homeassistant.helpers import frame
 from custom_components.google_maps import collector_client
 from custom_components.google_maps.gm_loc_sharing import GMPerson, GMLocSharing
-from custom_components.google_maps.const import CONF_CREATE_ACCT_ENTITY, CONF_MAX_GPS_ACCURACY
+from custom_components.google_maps.const import (
+    CONF_CREATE_ACCT_ENTITY,
+    CONF_MAX_GPS_ACCURACY,
+    UID_SUFFIXES,
+)
 
 DIAGNOSTICS = []
 
@@ -70,6 +75,7 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         initialized = loader.async_setup(self.hass)
         if inspect.isawaitable(initialized):
             await initialized
+        frame.async_setup(self.hass)
         self.hass.config.skip_pip = True
         self.hass.config_entries = ConfigEntries(self.hass, {})
         await self.hass.config_entries.async_initialize()
@@ -100,11 +106,12 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         for item in self.patches: item.stop()
         self.temp.cleanup()
 
-    async def add_entry(self, account=True):
+    async def add_entry(self, account=True, disable_polling=False):
         self.entry = ConfigEntry(version=4, minor_version=1, domain="google_maps", title=ACCOUNT,
             data={"endpoint":"http://127.0.0.1:8787","data_token":TOKEN},
             options={CONF_CREATE_ACCT_ENTITY:account,CONF_MAX_GPS_ACCURACY:1000,"scan_interval":60},
-            source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[])
+            source="user",unique_id=ACCOUNT,discovery_keys={},subentries_data=[],
+            pref_disable_polling=disable_polling)
         await self.hass.config_entries.async_add(self.entry)
         self.assertEqual(str(self.entry.state), "ConfigEntryState.LOADED",
             f"entry setup state={self.entry.state} reason={getattr(self.entry, 'reason', None)} diagnostics={DIAGNOSTICS[-2:]}")
@@ -118,6 +125,14 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         state = self.hass.states.get(entity_id)
         self.assertIsNotNone(state)
         return state
+
+    def sensor_entry(self, suffix, person_id="synthetic-person"):
+        registry = er.async_get(self.hass)
+        entity_id = registry.async_get_entity_id(
+            "sensor", "google_maps", f"{person_id}-{suffix}"
+        )
+        self.assertIsNotNone(entity_id)
+        return registry.async_get(entity_id)
 
     async def refresh(self, coordinator):
         self.set_document()
@@ -162,6 +177,7 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
 
     async def test_original_missing_contact_grace_and_reappearance(self):
         coordinator = await self.add_entry()
+        battery_id = self.sensor_entry("bat_lvl").entity_id
         calls=[]
         def later(hass, delay, callback):
             calls.append((delay, callback))
@@ -174,9 +190,12 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         await calls[0][1](datetime.now(UTC))
         await self.hass.async_block_till_done()
         self.assertEqual(self.tracker().state,"unavailable")
+        self.assertEqual(self.hass.states.get(battery_id).state, "unavailable")
         self.raw=json.loads((ROOT / "collector/tests/fixtures/google_response.json").read_text())
         await self.refresh(coordinator)
         self.assertNotEqual(self.tracker().state,"unavailable")
+        self.assertEqual(self.sensor_entry("bat_lvl").entity_id, battery_id)
+        self.assertEqual(self.hass.states.get(battery_id).state, "73")
 
     async def test_original_account_option_identity_and_poll_interval(self):
         self.raw.extend([None,None,deepcopy(self.raw[0][0])])
@@ -192,6 +211,88 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(entity_id)
         self.assertEqual(self.hass.states.get(entity_id).attributes["friendly_name"],"Google Maps "+ACCOUNT)
         self.assertEqual(self.entry.runtime_data.coordinator.update_interval.total_seconds(),120)
+        for suffix in UID_SUFFIXES:
+            self.sensor_entry(suffix, ACCOUNT)
+        self.hass.config_entries.async_update_entry(
+            self.entry, options={**self.entry.options, CONF_CREATE_ACCT_ENTITY: False}
+        )
+        await self.hass.config_entries.async_reload(self.entry.entry_id)
+        await self.hass.async_block_till_done()
+        self.assertIsNone(registry.async_get_entity_id("device_tracker", "google_maps", ACCOUNT))
+        for suffix in UID_SUFFIXES:
+            self.assertIsNone(registry.async_get_entity_id("sensor", "google_maps", f"{ACCOUNT}-{suffix}"))
+        self.assertIsNone(
+            dr.async_get(self.hass).async_get_device_by_identifier(
+                ("google_maps", ACCOUNT), self.entry.entry_id
+            )
+        )
+
+    async def test_upstream_sensors_follow_raw_data_and_keep_existing_tracker(self):
+        from custom_components.google_maps.device_tracker import GoogleMapsDeviceTracker
+
+        await self.add_entry()
+        self.assertNotIn("battery_level", GoogleMapsDeviceTracker.__dict__)
+        self.assertTrue(
+            {"battery_level", "battery_charging", "tracking_type"}
+            <= GoogleMapsDeviceTracker._unrecorded_attributes
+        )
+        initial_tracker = self.tracker()
+        battery = self.sensor_entry("bat_lvl")
+        self.assertIsNone(battery.disabled_by)
+        self.assertEqual(self.hass.states.get(battery.entity_id).state, "73")
+
+        registry = er.async_get(self.hass)
+        enabled = {}
+        for suffix in ("address", "gps_accuracy", "last_seen", "stale"):
+            sensor = self.sensor_entry(suffix)
+            self.assertIsNotNone(sensor.disabled_by)
+            self.assertEqual(sensor.device_id, battery.device_id)
+            enabled[suffix] = sensor.entity_id
+            registry.async_update_entity(sensor.entity_id, disabled_by=None)
+        await self.hass.config_entries.async_reload(self.entry.entry_id)
+        await self.hass.async_block_till_done()
+
+        now = datetime.now(UTC)
+        position = self.raw[0][0][1]
+        position[2] = round((now - timedelta(minutes=12)).timestamp() * 1000)
+        position[3] = 2000
+        await self.refresh(self.entry.runtime_data.coordinator)
+
+        self.assertEqual(self.tracker().entity_id, initial_tracker.entity_id)
+        self.assertEqual(self.tracker().attributes["last_seen"], initial_tracker.attributes["last_seen"])
+        self.assertEqual(self.hass.states.get(enabled["address"]).state, "SYNTHETIC_ADDRESS")
+        self.assertEqual(float(self.hass.states.get(enabled["gps_accuracy"]).state), 2000)
+        reported = datetime.fromisoformat(self.hass.states.get(enabled["last_seen"]).state)
+        self.assertAlmostEqual(reported.timestamp(), position[2] / 1000, delta=0.5)
+        self.assertAlmostEqual(float(self.hass.states.get(enabled["stale"]).state), 12, delta=0.1)
+
+        calls = self.calls
+        await self.hass.services.async_call(
+            "homeassistant", "update_entity", {"entity_id": enabled["stale"]}, blocking=True
+        )
+        self.assertEqual(self.calls, calls)
+
+    async def test_polling_disabled_keeps_manual_updates(self):
+        coordinator = await self.add_entry(disable_polling=True)
+        self.assertIsNone(coordinator.update_interval)
+        self.assertTrue(coordinator.always_update)
+        self.assertIsNone(coordinator._unsub_refresh)
+        calls = self.calls
+        await self.hass.services.async_call(
+            "homeassistant", "update_entity", {"entity_id": self.tracker().entity_id}, blocking=True
+        )
+        self.assertEqual(self.calls, calls + 1)
+        self.assertIsNone(coordinator._unsub_refresh)
+
+    async def test_mixed_upstream_revisions_fail_closed_and_recover(self):
+        coordinator = await self.add_entry()
+        before = self.tracker()
+        self.document["upstream_revision"] = "b2132123d46c47e5761d5d91cc08ca6b712fe6c1"
+        await coordinator.async_refresh()
+        self.assertFalse(coordinator.last_update_success)
+        self.assertEqual(self.tracker().attributes, before.attributes)
+        await self.refresh(coordinator)
+        self.assertTrue(coordinator.last_update_success)
 
     async def test_original_connectivity_failures_keep_last_known_tracker(self):
         coordinator = await self.add_entry()
@@ -258,6 +359,41 @@ class NativeRuntime(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["type"],"create_entry")
         self.assertNotIn("cookies_file",result["data"])
         self.assertEqual(result["options"][CONF_MAX_GPS_ACCURACY],500)
+
+    async def test_existing_source_and_options_reload_paths(self):
+        original = await self.add_entry()
+        entries = self.hass.config_entries
+        result = await entries.options.async_init(self.entry.entry_id)
+        for step, data in (
+            ("account_entity", {CONF_CREATE_ACCT_ENTITY: True}),
+            ("max_gps_accuracy", {CONF_MAX_GPS_ACCURACY: 1000}),
+            ("update_period", {"scan_interval": {"seconds": 120}}),
+        ):
+            self.assertEqual(result["step_id"], step)
+            result = await entries.options.async_configure(result["flow_id"], data)
+        self.assertEqual(result["type"], "create_entry")
+        await self.hass.async_block_till_done()
+        coordinator = self.entry.runtime_data.coordinator
+        self.assertIsNot(coordinator, original)
+        self.assertEqual(coordinator.update_interval, timedelta(seconds=120))
+
+        for source in ("reconfigure", "reauth"):
+            result = await entries.flow.async_init(
+                "google_maps", context={"source": source, "entry_id": self.entry.entry_id},
+                data=self.entry.data,
+            )
+            self.assertEqual(result["step_id"], "source")
+            result = await entries.flow.async_configure(
+                result["flow_id"], {"username": ACCOUNT, **self.entry.data}
+            )
+            self.assertEqual(result["reason"], f"{source}_successful")
+            await self.hass.async_block_till_done()
+            if source == "reconfigure":
+                self.assertIs(self.entry.runtime_data.coordinator, coordinator)
+            else:
+                self.assertIsNot(self.entry.runtime_data.coordinator, coordinator)
+            self.assertEqual(self.entry.unique_id, ACCOUNT)
+            self.assertEqual(dict(self.entry.data), {"endpoint": "http://127.0.0.1:8787", "data_token": TOKEN})
 
 
 class JSONResult(unittest.TestResult):

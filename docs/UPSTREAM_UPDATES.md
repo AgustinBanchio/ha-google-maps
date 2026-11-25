@@ -1,6 +1,6 @@
 # Auditing upstream updates
 
-Baseline: pnbruckner/ha-google-maps release 2.0.3, commit b2132123d46c47e5761d5d91cc08ca6b712fe6c1.
+The current source pin is pnbruckner/ha-google-maps 2.1.0 at `ae85b249b354c25c2994cd1458231039e1dc977f`. The original 2.0.3 audit remains available at `b2132123d46c47e5761d5d91cc08ca6b712fe6c1`. Use the exact `baseline` recorded in [upstream-patch-boundary.json](upstream-patch-boundary.json) for the next comparison.
 
 Do not enable automatic fork synchronization, auto-merge or floating collector images. A version tag is a label; record the full commit and image digest.
 
@@ -11,9 +11,9 @@ Do not enable automatic fork synchronization, auto-merge or floating collector i
 
 ```sh
 git fetch upstream --tags
-git log --oneline b2132123d46c47e5761d5d91cc08ca6b712fe6c1..upstream/main
-git diff --stat b2132123d46c47e5761d5d91cc08ca6b712fe6c1..upstream/main
-git diff b2132123d46c47e5761d5d91cc08ca6b712fe6c1..upstream/main -- custom_components/google_maps .github
+git log --oneline ae85b249b354c25c2994cd1458231039e1dc977f..upstream/main
+git diff --stat ae85b249b354c25c2994cd1458231039e1dc977f..upstream/main
+git diff ae85b249b354c25c2994cd1458231039e1dc977f..upstream/main -- custom_components/google_maps .github
 ```
 
 3. Inspect the actual code, new files, manifest/dependency changes, build steps and destinations; do not rely on release notes alone. Trace cookie handling through HTTP, persistence, errors, diagnostics and management endpoints.

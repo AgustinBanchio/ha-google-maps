@@ -6,7 +6,7 @@ import tarfile
 from io import BytesIO
 import json
 ROOT=Path(__file__).resolve().parents[1]
-BASE="b2132123d46c47e5761d5d91cc08ca6b712fe6c1"
+BASE=json.loads((ROOT / "docs/upstream-patch-boundary.json").read_text())["baseline"]
 
 def run(args, cwd, **kwargs):
     return subprocess.check_output(args,cwd=cwd,stderr=subprocess.DEVNULL,**kwargs)

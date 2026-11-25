@@ -12,6 +12,7 @@ dependencies = [
   "requests==2.34.2",
   "cryptography==50.0.2",
   "paho-mqtt==2.1.0",
+  "propcache==0.5.4",
   "starlette==1.9.0",
   "uvicorn==0.54.0",
   "python-multipart==0.0.32",

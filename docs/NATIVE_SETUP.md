@@ -23,7 +23,13 @@ Run your usual `docker compose pull` and `docker compose up -d` in the existing 
 
 The session service runs in its own Compose project with `restart: unless-stopped`; its encrypted session, encryption key and scoped data key persist outside the container. Updating the HA project does not update or recreate the collector. A normal Pi restart brings back HA and the separate service through their Docker restart policies; an explicitly stopped container remains stopped.
 
-Tested HA version: 2026.10.1. A future HA release can change custom-integration APIs; CI covers the supported version and upstream updates are reviewed using [UPSTREAM_UPDATES](UPSTREAM_UPDATES.md). Back up HA configuration before major HA updates. Do not install the original upstream component over this fork or let HACS replace it with the original cookie-based release.
+The 2.1.0-based component requires HA 2026.7 or later. The runtime suite uses HA 2026.10.1. Back up HA configuration before major HA updates and use the source from this fork for integration upgrades. Follow the [coordinated 2.1.0 rollout](audits/2026-11-25-upstream-2.1.0/REVIEW.md) to reuse your current encrypted session and HA data key.
+
+## Sensors and polling in 2.1.0
+
+Each tracked person has a battery sensor enabled by default. Address, GPS accuracy, last seen and location age sensors start disabled. Enable the sensors you want from the person's HA entity list. These location sensors show the latest reported fix, so their values can differ from the accuracy-filtered tracker. Enabling the address sensor makes its state available to HA's recorder under your recorder settings.
+
+The integration honors HA's **Enable polling for changes** system option. With polling disabled, a manual update on the tracker fetches new observations. A manual update on the location-age sensor only recalculates the age from its last observation.
 
 ## Session replacement
 

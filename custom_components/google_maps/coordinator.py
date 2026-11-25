@@ -1,14 +1,14 @@
 """DataUpdateCoordinator for the Google Maps integration."""
-from __future__ import annotations
 
-from asyncio import Lock
+from asyncio import Lock, Queue
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
-from typing import Any, cast
+from typing import Any, cast, override
 
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import Event, HomeAssistant, callback
@@ -16,8 +16,8 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
 
+from .collector_client import CollectorClient
 from .const import (
     CONF_CREATE_ACCT_ENTITY,
     COOKIE_WARNING_PERIOD,
@@ -28,21 +28,20 @@ from .gm_loc_sharing import (
     InvalidData,
     RequestFailed,
 )
-from .helpers import PersonData, UniqueID, expiring_soon
-from .collector_client import CollectorClient
+from .helpers import PersonData, PersonID, expiring_soon
 
 _LOGGER = logging.getLogger(__name__)
 
 
-GMData = dict[UniqueID, PersonData]
-"""Google Maps data.
+GMPersonData = dict[PersonID, PersonData]
+"""Google Maps person data.
 
-Dictionary of unique ID -> PersonData.
-For "account entity", unique ID is the account's email address.
+Dictionary of person ID -> PersonData.
+For "account entity", person ID is the account's email address.
 """
 
 
-class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
+class GMDataUpdateCoordinator(DataUpdateCoordinator[GMPersonData]):
     """Google Maps data update coordinator."""
 
     config_entry: ConfigEntry
@@ -53,25 +52,33 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
         """Initialize coordinator."""
         self._create_acct_entity = entry.options[CONF_CREATE_ACCT_ENTITY]
 
-        # The account's username is used as the config entry's unique ID.
+        # The account's email address (aka username) is used as the config entry's
+        # unique ID.
         self._account_email = cast(str, entry.unique_id)
-        self.cookie_lock = Lock()
+        self._source_lock = Lock()
 
+        if entry.pref_disable_polling:
+            update_interval: timedelta | None = None
+            always_update = True
+        else:
+            update_interval = timedelta(seconds=entry.options[CONF_SCAN_INTERVAL])
+            always_update = False
         super().__init__(
             hass,
             _LOGGER,
             config_entry=entry,
             name=entry.title,
-            update_interval=timedelta(seconds=entry.options[CONF_SCAN_INTERVAL]),
-            always_update=False,
+            update_interval=update_interval,
+            always_update=always_update,
         )
 
+    @override
     async def async_shutdown(self) -> None:
-        """Cancel listeners, save cookies & close API."""
+        """Cancel listeners and close the local collector connection."""
         await super().async_shutdown()
         self._unsub_all()
         if hasattr(self, "_api"):
-            async with self.cookie_lock:
+            async with self._source_lock:
                 await self.hass.async_add_executor_job(self._api.close)
 
     def _unsub_all(self) -> None:
@@ -84,6 +91,7 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
             self._unsub_exp()
             self._unsub_exp = None
 
+    @override
     async def _async_setup(self) -> None:
         """Set up the coordinator."""
         try:
@@ -92,12 +100,13 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
         except ValueError:
             raise ConfigEntryAuthFailed("Configure the external collector connection") from None
 
-    async def _async_update_data(self) -> GMData:
+    @override
+    async def _async_update_data(self) -> GMPersonData:
         """Fetch the latest data from the source.
 
-        If creating "account entity", its unique ID will be the account's email address.
+        If creating "account entity", its person ID will be the account's email address.
         """
-        async with self.cookie_lock:
+        async with self._source_lock:
             try:
                 await self.hass.async_add_executor_job(self._api.get_new_data)
                 people = self._api.get_people(self._create_acct_entity)
@@ -108,7 +117,7 @@ class GMDataUpdateCoordinator(DataUpdateCoordinator[GMData]):
 
         self._source_expiration_synced()
         return {
-            UniqueID(person.id): PersonData.from_person(person) for person in people
+            PersonID(person.id): PersonData.from_person(person) for person in people
         }
 
     def _source_expiration_synced(self, shutting_down: bool = False) -> None:
@@ -150,6 +159,7 @@ class GMConfigEntryParams:
     coordinator: GMDataUpdateCoordinator
     setup_data: dict[str, Any]
     setup_options: dict[str, Any]
+    new_sensors_queue: Queue[list[SensorEntity]]
 
     def __init__(
         self, coordinator: GMDataUpdateCoordinator, entry: ConfigEntry
@@ -158,6 +168,7 @@ class GMConfigEntryParams:
         self.coordinator = coordinator
         self.setup_data = deepcopy(dict(entry.data))
         self.setup_options = deepcopy(dict(entry.options))
+        self.new_sensors_queue = Queue()
 
 
 GMConfigEntry = ConfigEntry[GMConfigEntryParams]

@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 import requests
 from .gm_loc_sharing import GMPerson, InvalidCookies, InvalidData, RequestFailed
 
-UPSTREAM_REVISION = "b2132123d46c47e5761d5d91cc08ca6b712fe6c1"
+UPSTREAM_REVISION = "ae85b249b354c25c2994cd1458231039e1dc977f"
 DEFAULT_ENDPOINT = "http://127.0.0.1:8787"
 MAX_BYTES = 4 * 1024 * 1024
 

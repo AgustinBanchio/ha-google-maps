@@ -1,11 +1,21 @@
 """Original Google Maps options with external-session source configuration."""
-from __future__ import annotations
+
 from abc import abstractmethod
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Any
+from typing import Any, override
+
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry, ConfigEntryBaseFlow, ConfigFlow, ConfigFlowResult, OptionsFlow
+
+from homeassistant.config_entries import (
+    SOURCE_REAUTH,
+    SOURCE_RECONFIGURE,
+    ConfigEntry,
+    ConfigEntryBaseFlow,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_SCAN_INTERVAL, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
@@ -115,20 +125,39 @@ class GoogleMapsConfigFlow(ConfigFlow, GoogleMapsFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    @override
+    def async_get_options_flow(config_entry: ConfigEntry) -> GoogleMapsOptionsFlow:
         return GoogleMapsOptionsFlow()
 
-    async def async_step_user(self, user_input=None):
+    @property
+    def _update_entry(self) -> ConfigEntry | None:
+        """Resolve the existing entry for the current step."""
+        if self.source == SOURCE_REAUTH:
+            return self._get_reauth_entry()
+        if self.source == SOURCE_RECONFIGURE:
+            return self._get_reconfigure_entry()
+        return None
+
+    @override
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         return await self.async_step_source(user_input)
 
-    async def async_step_reauth(self, data):
+    async def async_step_reauth(
+        self, _: Mapping[str, Any]
+    ) -> ConfigFlowResult:
         return await self.async_step_source()
 
-    async def async_step_reconfigure(self, data):
+    async def async_step_reconfigure(
+        self, _: Mapping[str, Any] | None = None
+    ) -> ConfigFlowResult:
         return await self.async_step_source()
 
-    async def async_step_source(self, user_input=None):
-        entry = self.hass.config_entries.async_get_entry(self.context.get("entry_id", ""))
+    async def async_step_source(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        entry = self._update_entry
         errors = {}
         if user_input is not None:
             account = user_input[CONF_USERNAME].strip().lower()
@@ -152,7 +181,6 @@ class GoogleMapsConfigFlow(ConfigFlow, GoogleMapsFlow, domain=DOMAIN):
                 if entry is None:
                     self._abort_if_unique_id_configured()
                 self._data = {"endpoint": user_input["endpoint"].rstrip("/"), "data_token": user_input["data_token"]}
-                self._source_entry = entry
                 self._init_gmflow(account, entry.options if entry else {})
                 if entry:
                     return await self.async_step_done()
@@ -164,15 +192,20 @@ class GoogleMapsConfigFlow(ConfigFlow, GoogleMapsFlow, domain=DOMAIN):
         })
         return self.async_show_form(step_id="source", data_schema=schema, errors=errors)
 
-    async def async_step_done(self, _=None):
-        if self._source_entry is not None:
-            self.hass.config_entries.async_update_entry(self._source_entry, data=self._data, version=self.VERSION)
-            await self.hass.config_entries.async_reload(self._source_entry.entry_id)
-            return self.async_abort(reason="reauth_successful" if self.context.get("source") == "reauth" else "reconfigure_successful")
+    @override
+    async def async_step_done(
+        self, _: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if entry := self._update_entry:
+            return self.async_update_reload_and_abort(
+                entry,
+                data=self._data,
+                reload_even_if_entry_is_unchanged=self.source == SOURCE_REAUTH,
+            )
         return self.async_create_entry(title=self._username, data=self._data, options=self._options)
 
 
-class GoogleMapsOptionsFlow(OptionsFlow, GoogleMapsFlow):
+class GoogleMapsOptionsFlow(OptionsFlowWithReload, GoogleMapsFlow):
     """Google Maps options flow."""
 
     async def async_step_init(
@@ -184,6 +217,7 @@ class GoogleMapsOptionsFlow(OptionsFlow, GoogleMapsFlow):
         self._init_gmflow(username, self.config_entry.options)
         return await self.async_step_account_entity()
 
+    @override
     async def async_step_done(
         self, _: dict[str, Any] | None = None
     ) -> ConfigFlowResult:

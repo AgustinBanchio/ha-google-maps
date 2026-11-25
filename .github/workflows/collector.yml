@@ -46,6 +46,8 @@ jobs:
           fetch-depth: 0
       - name: Protected upstream modules and update simulation
         run: |
+          upstream_revision=$(python -c 'import json; print(json.load(open("docs/upstream-patch-boundary.json"))["baseline"])')
+          git fetch --no-tags https://github.com/pnbruckner/ha-google-maps.git "$upstream_revision"
           python tools/check_upstream.py
           python tools/test_upstream_rebase.py
       - name: Original HA entities and external source contract

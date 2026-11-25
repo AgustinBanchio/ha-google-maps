@@ -1,6 +1,7 @@
 {
   "domain": "google_maps",
   "name": "Google Maps",
+  "categories": ["presence_location"],
   "codeowners": [
     "@pnbruckner"
   ],
@@ -11,5 +12,5 @@
   "issue_tracker": "https://github.com/AgustinBanchio/ha-google-maps/issues",
   "loggers": [],
   "requirements": [],
-  "version": "2.0.3.post1"
+  "version": "2.1.0.post1"
 }

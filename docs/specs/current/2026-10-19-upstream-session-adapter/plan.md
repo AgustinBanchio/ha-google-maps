@@ -10,3 +10,5 @@ All tasks sequential; owner explicitly authorized execution of this course corre
 
 
 2026-10-20 diagnostics maintenance: (1) allowlisted error metadata at the external transport seam; (2) bounded persistent JSON diagnostics and dedicated sanitized events for imports/polls/access-key rejection; (3) private status UI for last failure and rotation counts; (4) synthetic Requests cookie extraction, rotation persistence, error/redaction/retention/restart/corruption tests plus current suites; (5) push owner main and prepare targeted collector rollout/rollback with no existing-stack change.
+
+2026-11-25 2.1.0 port: (1) compare the exact upstream tags and reapply the fork's collector adapter on a local review branch, (2) pin both Maps client copies and the collector's new dependency, (3) exercise actual HA entities, polling and flow reloads plus collector security and encrypted session upgrade/rollback, (4) verify packaging and document a coordinated rollout before pushing directly to owner main.

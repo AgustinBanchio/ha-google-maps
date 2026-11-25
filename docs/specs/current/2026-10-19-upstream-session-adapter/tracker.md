@@ -2,6 +2,14 @@
 
 Status: COMPLETE. Owner authorized implementation. Native source release: `86f69835e00fba2f9e619a5267cb62d4ee352d83`.
 
+## 2026-11-25 upstream 2.1.0 port
+
+The owner requested the full upstream release with the fork's existing cookie handling. Implemented pinned `ae85b249b354c25c2994cd1458231039e1dc977f` with all new sensors, tracker battery compatibility, recorder exclusions, polling preference, options reload and metadata. The collector still owns cookies. Retained HA entry version 4, existing IDs, scoped data key, encrypted state format and diagnostics. Fixed sensor registry IDs containing hyphens and cleanup for disabled sensors.
+
+Local verification: 11 actual HA scenarios passed, 134 Windows collector tests passed with two broker skips, and all 136 Linux broker tests passed. The deployed collector source wrote a synthetic session, 2.1.0 read it and persisted rotation, and the previous source reopened the updated state using the same keys. Local Docker could not execute ARM64. See the [audit and paired rollout/rollback procedure](../../../audits/2026-11-25-upstream-2.1.0/REVIEW.md).
+
+Exact next action: verify the pinned source and packaging, push directly to owner main and check native ARM64 CI. Live deployment requires separate approval for a paired collector/component upgrade and a targeted HA restart. No Pi service changes were made.
+
 ## 2026-11-25 upstream status check
 
 Upstream published [2.1.0](https://github.com/pnbruckner/ha-google-maps/releases/tag/2.1.0) on 9 November at `ae85b249b354c25c2994cd1458231039e1dc977f`. GitHub reports that upstream `main` matches the tag. It is two commits and 13 changed files ahead of our audited `b2132123d46c47e5761d5d91cc08ca6b712fe6c1`. Reviewed the complete [merged #62 patch](https://github.com/pnbruckner/ha-google-maps/commit/338f975a282bda1cf5a7aca765f69418c619ae25) and tag's version bump. Dynamic polling [PR #52](https://github.com/pnbruckner/ha-google-maps/pull/52) remains open at the previously reviewed head.
@@ -12,7 +20,7 @@ Upstream published [2.1.0](https://github.com/pnbruckner/ha-google-maps/releases
 
 The protected-source guard passed for the five pinned modules and identical vendored client. This was a static assessment. No candidate runtime tests or live host checks were performed.
 
-Exact next action if the owner requests implementation: prepare a scoped battery compatibility patch from the pinned upstream diff on a review branch, and verify that actual HA maintains the tracker IDs and battery state attributes before preparing a rollout. Follow [the upstream update procedure](../../../UPSTREAM_UPDATES.md). The released fork continues to use its audited 2.0.3 baseline.
+The owner subsequently requested the full release. The port and its rollout status are tracked above.
 
 ## 2026-11-03 upstream status check: COMPLETE
 

@@ -13,7 +13,7 @@ import requests
 from ._upstream import gm_loc_sharing as upstream
 from .diagnostics import Reason
 
-REVISION = "b2132123d46c47e5761d5d91cc08ca6b712fe6c1"
+REVISION = "ae85b249b354c25c2994cd1458231039e1dc977f"
 ACCOUNT_ID = "__collector_account__"
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
